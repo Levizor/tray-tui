@@ -7,7 +7,8 @@ use crate::{
     handler::handle_key_events,
     tui::Tui,
 };
-use clap::Parser;
+use clap::{CommandFactory, Parser};
+use clap_complete::generate;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use simplelog::{CombinedLogger, Config as Conf, LevelFilter, WriteLogger};
 
@@ -23,6 +24,13 @@ pub mod ui;
 #[tokio::main]
 async fn main() -> AppResult<()> {
     let config = Config::parse();
+
+    if let Some(shell) = config.completions {
+        let mut cmd = Config::command();
+        let mut out = io::stdout();
+        generate(shell, &mut cmd, "tray-tui", &mut out);
+        return Ok(());
+    }
 
     if config.debug {
         CombinedLogger::init(vec![WriteLogger::new(

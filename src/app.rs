@@ -7,8 +7,6 @@ use system_tray::{
 
 use tokio::sync::broadcast::Receiver;
 
-use crate::ui::Item;
-
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -18,7 +16,7 @@ pub struct App {
     pub running: bool,
     pub tray_rx: Mutex<Receiver<Event>>,
     client: Client,
-    items: Vec<Item>,
+    items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
 }
 
 impl App {

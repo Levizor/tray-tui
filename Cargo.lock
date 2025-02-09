@@ -190,6 +190,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap_complete"
+version = "4.5.44"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "375f9d8255adeeedd51053574fd8d4ba875ea5fa558e86617b07f09f1680c8b6"
+dependencies = [
+ "clap",
+]
+
+[[package]]
 name = "clap_derive"
 version = "4.5.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1187,6 +1196,7 @@ name = "tray-tui"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "clap_complete",
  "crossterm",
  "futures",
  "log",
