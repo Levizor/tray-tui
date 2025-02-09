@@ -1,11 +1,22 @@
 use ratatui::{
+    buffer::Buffer,
     layout::Alignment,
     style::{Color, Style},
-    widgets::{Block, BorderType, Paragraph},
+    widgets::{Block, BorderType, Paragraph, WidgetRef},
     Frame,
 };
 
+use system_tray::item::StatusNotifierItem;
+
 use crate::app::App;
+
+#[derive(Debug)]
+pub struct Item(pub StatusNotifierItem);
+
+impl WidgetRef for Item {
+    #[allow(clippy::cast_possible_truncation)]
+    fn render_ref(&self, area: ratatui::layout::Rect, buf: &mut Buffer) {}
+}
 
 /// Renders the user interface widgets.
 pub fn render(app: &mut App, frame: &mut Frame) {

@@ -11,7 +11,7 @@ use clap::Parser;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use simplelog::{CombinedLogger, Config as Conf, LevelFilter, WriteLogger};
 
-use system_tray::client::Client;
+use system_tray::{client::Client, error};
 
 pub mod app;
 pub mod config;
@@ -34,6 +34,7 @@ async fn main() -> AppResult<()> {
     }
 
     let client = Client::new().await.unwrap();
+    log::info!("Client is initialized");
     let mut tray_rx = client.subscribe();
 
     // Create an application.
@@ -49,10 +50,13 @@ async fn main() -> AppResult<()> {
 
     while app.running {
         tui.draw(&mut app)?;
-        // Handle events.
+
         tokio::select! {
-            Ok(ev) = tray_rx.recv() => {
-                log::info!("UPDATE: {:?}", ev);
+            Ok(update) = tray_rx.recv() => {
+                log::info!("UPDATE: {:?}", update);
+                if let Err(error) = app.feed(update) {
+                    log::error!("{:?}", error);
+                }
             }
 
             Ok(event) = tui.events.next() => {

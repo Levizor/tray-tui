@@ -7,6 +7,8 @@ use system_tray::{
 
 use tokio::sync::broadcast::Receiver;
 
+use crate::ui::Item;
+
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -16,7 +18,7 @@ pub struct App {
     pub running: bool,
     pub tray_rx: Mutex<Receiver<Event>>,
     client: Client,
-    items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
+    items: Vec<Item>,
 }
 
 impl App {
@@ -28,6 +30,16 @@ impl App {
             items: client.items(),
             client,
         }
+    }
+
+    pub fn feed(&mut self, update: Event) -> Result<(), ()> {
+        log::info!("{:?}", self.items.lock().unwrap());
+        //match update {
+        //    Event::Add(item, status_notifier_item) => todo!(),
+        //    Event::Update(item, update_event) => todo!(),
+        //    Event::Remove(item) => {}
+        //}
+        Ok(())
     }
 
     /// Handles the tick event of the terminal.
