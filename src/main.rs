@@ -1,10 +1,16 @@
-use std::{error::Error, fs::File, io};
+use std::{
+    error::Error,
+    fs::File,
+    io,
+    thread::{self, Thread},
+    time::Duration,
+};
 
 use crate::{
     app::{App, AppResult},
-    config::Config,
+    cli::Cli,
     event::{Event, EventHandler},
-    handler::handle_key_events,
+    handler::{handle_key_events, handle_mouse_event},
     tui::Tui,
 };
 use clap::{CommandFactory, Parser};
@@ -12,21 +18,23 @@ use clap_complete::generate;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use simplelog::{CombinedLogger, Config as Conf, LevelFilter, WriteLogger};
 
-use system_tray::{client::Client, error};
+use system_tray::{client::Client, item::StatusNotifierItem, menu::TrayMenu};
 
 pub mod app;
+pub mod cli;
 pub mod config;
 pub mod event;
 pub mod handler;
 pub mod tui;
 pub mod ui;
+pub mod wrappers;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    let config = Config::parse();
+    let config = Cli::parse();
 
     if let Some(shell) = config.completions {
-        let mut cmd = Config::command();
+        let mut cmd = Cli::command();
         let mut out = io::stdout();
         generate(shell, &mut cmd, "tray-tui", &mut out);
         return Ok(());
@@ -45,37 +53,39 @@ async fn main() -> AppResult<()> {
     log::info!("Client is initialized");
     let mut tray_rx = client.subscribe();
 
+    log::info!(
+        "status: {}, traymenu {}, client {}",
+        size_of::<StatusNotifierItem>(),
+        size_of::<TrayMenu>(),
+        size_of_val(&client)
+    );
+
     // Create an application.
     let mut app = App::new(client);
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new(250);
+    let events = EventHandler::new();
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
     log::info!("Initialized TUI");
 
+    tui.draw(&mut app)?;
     while app.running {
         tui.draw(&mut app)?;
-
         tokio::select! {
             Ok(update) = tray_rx.recv() => {
-                log::info!("UPDATE: {:?}", update);
-                if let Err(error) = app.feed(update) {
-                    log::error!("{:?}", error);
-                }
+                app.update(update);
             }
 
             Ok(event) = tui.events.next() => {
                 match event {
                     Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
                     Event::Mouse(mouse_event) => {
-                        //handle_mouse_event(mouse_event, &mut app)?
+                        handle_mouse_event(mouse_event, &mut app)?
                     },
                     Event::Resize(_, _) => {tui.draw(&mut app).unwrap()}
-                    Event::Tick => {}
-
                 }
             }
         };

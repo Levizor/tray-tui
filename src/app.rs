@@ -1,11 +1,14 @@
-use std::{collections::HashMap, error, sync::Arc, sync::Mutex};
+use ratatui::layout::Rect;
+use std::{collections::HashMap, error, sync::Arc, sync::Mutex, sync::MutexGuard};
 use system_tray::{
-    client::{Client, Event},
+    client::{Client, Event, UpdateEvent},
     item::StatusNotifierItem,
     menu::TrayMenu,
 };
 
 use tokio::sync::broadcast::Receiver;
+
+use crate::wrappers::KeyRect;
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -15,8 +18,8 @@ pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 pub struct App {
     pub running: bool,
     pub tray_rx: Mutex<Receiver<Event>>,
-    client: Client,
     items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
+    pub keys: Vec<KeyRect>,
 }
 
 impl App {
@@ -26,18 +29,20 @@ impl App {
             running: true,
             tray_rx: Mutex::new(client.subscribe()),
             items: client.items(),
-            client,
+            keys: Vec::new(),
         }
     }
 
-    pub fn feed(&mut self, update: Event) -> Result<(), ()> {
-        log::info!("{:?}", self.items.lock().unwrap());
-        //match update {
-        //    Event::Add(item, status_notifier_item) => todo!(),
-        //    Event::Update(item, update_event) => todo!(),
-        //    Event::Remove(item) => {}
-        //}
-        Ok(())
+    /// Updating keys vector (for tracking of the current focus)
+    pub fn update(&mut self, update: Event) {
+        log::info!("UPDATE: {:?}", update);
+        log::debug!("Items now: {:?}", self.items);
+        let mut buffer: Vec<KeyRect> = Vec::new();
+        if let Some(items) = self.get_items() {
+            buffer = items.keys().cloned().map(KeyRect::new).collect();
+            buffer.sort();
+        }
+        self.keys = buffer;
     }
 
     /// Handles the tick event of the terminal.
@@ -48,7 +53,12 @@ impl App {
         self.running = false;
     }
 
-    pub fn get_items(&self) -> HashMap<String, (StatusNotifierItem, Option<TrayMenu>)> {
-        self.items.lock().unwrap().clone()
+    pub fn get_items(
+        &self,
+    ) -> Option<MutexGuard<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>> {
+        match self.items.lock() {
+            Ok(items) => Some(items),
+            Err(_) => None,
+        }
     }
 }

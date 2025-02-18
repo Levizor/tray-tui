@@ -8,10 +8,12 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.28", features = ["derive"] }
 clap_complete = "4.5.44"
+config = "0.15.8"
 crossterm = { version = "0.28.1", features = ["event-stream"] }
 futures = "0.3.31"
 log = "0.4.25"
 ratatui = { version = "0.29.0", features = ["unstable-widget-ref"] }
+serde = { version = "1.0.217", features = ["serde_derive"] }
 simplelog = "0.12.2"
 system-tray = "0.7.0"
 # system-tray = "0.6.0"
