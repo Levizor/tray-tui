@@ -1,4 +1,3 @@
-
 use crossterm::event::{Event as CrosstermEvent, KeyEvent, MouseEvent};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
@@ -14,6 +13,7 @@ pub enum Event {
     Mouse(MouseEvent),
     /// Terminal resize.
     Resize(u16, u16),
+    FocusLost,
 }
 
 /// Terminal event handler.
@@ -55,6 +55,7 @@ impl EventHandler {
                         _sender.send(Event::Resize(x, y)).unwrap();
                       },
                       CrosstermEvent::FocusLost => {
+                        _sender.send(Event::FocusLost).unwrap();
                       },
                       CrosstermEvent::FocusGained => {
                       },

@@ -15,8 +15,11 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     if let Some(items) = app.get_items() {
         let mut items_vec: Vec<Item> = Vec::new();
         app.keys.iter().for_each(|k| {
-            let mut item = Item::new(items.get(&k.key).expect("not possible (I guess)"), &app);
-            item.set_focused(k.focused);
+            let item = Item::new(
+                k.key.clone(),
+                items.get(&k.key).expect("not possible (I guess)"),
+                &app,
+            );
             items_vec.push(item);
         });
 

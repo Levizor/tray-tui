@@ -62,20 +62,24 @@ impl Eq for KeyRect {}
 /// Wrapper around set of StatusNotifierItem and TrayMenu
 #[derive(Debug)]
 pub struct Item<'a> {
+    pub id: String,
     pub item: StatusNotifierItemW<'a>,
     pub menu: Option<TrayMenuW<'a>>,
     pub rect: Rect,
-    pub is_focused: bool,
     app: &'a App,
 }
 
 impl<'a> Item<'a> {
-    pub fn new((item, menu): &'a (StatusNotifierItem, Option<TrayMenu>), app: &'a App) -> Self {
+    pub fn new(
+        id: String,
+        (item, menu): &'a (StatusNotifierItem, Option<TrayMenu>),
+        app: &'a App,
+    ) -> Self {
         Self {
+            id,
             item: StatusNotifierItemW::new(item),
             menu: menu.as_ref().map(|tm| TrayMenuW::new(tm, app)),
             rect: Rect::default(),
-            is_focused: false,
             app,
         }
     }
@@ -83,18 +87,16 @@ impl<'a> Item<'a> {
     pub fn set_rect(&mut self, rect: Rect) {
         self.rect = rect;
     }
-
-    pub fn set_focused(&mut self, focused: bool) {
-        self.is_focused = focused;
-    }
 }
 
 impl Widget for Item<'_> {
     fn render(self, area: layout::Rect, buf: &mut Buffer) {
-        if self.is_focused {
-            if let Some(menu) = self.menu {
-                menu.render(area, buf);
-                return;
+        if let Some(i) = &self.app.focused_key {
+            if self.id.eq(i) {
+                if let Some(menu) = self.menu {
+                    menu.render(area, buf);
+                    return;
+                }
             }
         }
 
@@ -173,6 +175,7 @@ impl Widget for TrayMenuW<'_> {
     where
         Self: Sized,
     {
+        self.app.box_stack.borrow_mut().clear();
         let menu_items = self.submenus.iter().map(|s| MenuItemW::new(s, self.app));
         let rects = Layout::vertical(
             vec![Constraint::Length(area.height / self.submenus.len() as u16); self.submenus.len()]
@@ -180,9 +183,10 @@ impl Widget for TrayMenuW<'_> {
         )
         .split(area);
 
-        menu_items
-            .zip(rects.iter())
-            .for_each(|(m, r)| m.render(*r, buf));
+        menu_items.zip(rects.iter()).for_each(|(m, r)| {
+            self.app.box_stack.borrow_mut().push((m.id, *r));
+            m.render(*r, buf)
+        });
     }
 }
 

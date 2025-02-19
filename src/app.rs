@@ -1,28 +1,43 @@
-use ratatui::layout::Rect;
-use std::{collections::HashMap, error, sync::Arc, sync::Mutex, sync::MutexGuard};
+use ratatui::layout::{Position, Rect};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    error,
+    sync::{Arc, Mutex, MutexGuard},
+};
 use system_tray::{
     client::{Client, Event},
     item::StatusNotifierItem,
-    menu::TrayMenu,
+    menu::{MenuItem, TrayMenu},
 };
 
 use tokio::sync::broadcast::Receiver;
 
 use crate::wrappers::KeyRect;
 
+pub type BoxStack = Vec<(i32, Rect)>;
+
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
+
+#[derive(Debug)]
+pub enum BoxStackKey {
+    StatusNotifierItemId(String),
+    MenuId(i32),
+}
 
 pub struct AppState {}
 
 /// Application.
 #[derive(Debug)]
 pub struct App {
+    pub client: Client,
     pub running: bool,
     pub tray_rx: Mutex<Receiver<Event>>,
     items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
-    pub keys: Vec<KeyRect>,            // for the StatusNotifierItem
-    pub box_stack: Vec<(usize, Rect)>, // for the tray menus
+    pub keys: Vec<KeyRect>, // for the StatusNotifierItem
+    pub focused_key: Option<String>,
+    pub box_stack: RefCell<Vec<(i32, Rect)>>, // for the tray menus
 }
 
 impl App {
@@ -33,7 +48,9 @@ impl App {
             tray_rx: Mutex::new(client.subscribe()),
             items: client.items(),
             keys: Vec::new(),
-            box_stack: Vec::new(),
+            box_stack: RefCell::default(),
+            client,
+            focused_key: None,
         }
     }
 

@@ -1,7 +1,4 @@
-use std::{
-    fs::File,
-    io,
-};
+use std::{fs::File, io};
 
 use crate::{
     app::{App, AppResult},
@@ -80,9 +77,13 @@ async fn main() -> AppResult<()> {
                 match event {
                     Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
                     Event::Mouse(mouse_event) => {
-                        handle_mouse_event(mouse_event, &mut app)?
+                        handle_mouse_event(mouse_event, &mut app).await?
                     },
                     Event::Resize(_, _) => {tui.draw(&mut app).unwrap()}
+                    Event::FocusLost => {
+                        log::info!("FocusLost");
+                        app.focused_key=None;
+                    }
                 }
             }
         };
