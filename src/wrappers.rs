@@ -10,7 +10,7 @@ use ratatui::{
 };
 use system_tray::{
     item::StatusNotifierItem,
-    menu::{MenuItem, TrayMenu},
+    menu::{MenuItem, MenuType, TrayMenu},
 };
 
 use crate::app::App;
@@ -176,15 +176,20 @@ impl Widget for TrayMenuW<'_> {
     where
         Self: Sized,
     {
-        self.app.box_stack.borrow_mut().clear();
-        let menu_items = self.submenus.iter().map(|s| MenuItemW::new(s, self.app));
-        let rects = Layout::vertical(iter::repeat(Constraint::Fill(1)).take(self.submenus.len()))
-            .split(area);
+        let menu_items: Vec<_> = self
+            .submenus
+            .iter()
+            .filter(|m| m.menu_type != MenuType::Separator)
+            .map(|s| MenuItemW::new(s, self.app))
+            .collect();
+        let rects =
+            Layout::vertical(iter::repeat(Constraint::Fill(1)).take(menu_items.len())).split(area);
 
-        menu_items.zip(rects.iter()).for_each(|(m, r)| {
+        menu_items.into_iter().zip(rects.iter()).for_each(|(m, r)| {
             self.app.box_stack.borrow_mut().push((m.id, *r));
             m.render(*r, buf)
         });
+        self.app.box_stack.borrow_mut().clear();
     }
 }
 
@@ -212,10 +217,16 @@ impl Widget for MenuItemW<'_> {
     where
         Self: Sized,
     {
-        let line = match &self.label {
-            Some(label) => label.to_line(),
-            None => self.id.to_line(),
+        let mut label: String = match &self.label {
+            Some(label) => label.to_string(),
+            None => self.id.to_string(),
         };
+        if !self.submenu.is_empty() {
+            label.push_str(" ⏵");
+        }
+
+        let line = label.to_line();
+
         buf.set_line(
             area.x + (area.width.saturating_sub(line.width() as u16)) / 2,
             area.y + (area.height.saturating_sub(1)) / 2,
@@ -223,7 +234,7 @@ impl Widget for MenuItemW<'_> {
             area.width,
         );
         if !self.submenu.is_empty() {
-            return; // TODO
+            // TODO
         };
     }
 }

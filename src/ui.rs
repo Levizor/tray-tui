@@ -1,4 +1,4 @@
-use std::{rc::Rc, slice::Iter};
+use std::rc::Rc;
 
 use ratatui::{
     layout::{Constraint, Layout, Rect},

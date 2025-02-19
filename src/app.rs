@@ -1,4 +1,4 @@
-use ratatui::layout::{Position, Rect};
+use ratatui::layout::Rect;
 use std::{
     cell::RefCell,
     collections::HashMap,
@@ -8,7 +8,7 @@ use std::{
 use system_tray::{
     client::{Client, Event},
     item::StatusNotifierItem,
-    menu::{MenuItem, TrayMenu},
+    menu::TrayMenu,
 };
 
 use tokio::sync::broadcast::Receiver;
