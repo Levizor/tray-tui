@@ -1,10 +1,10 @@
-use std::rc::Rc;
+use std::{rc::Rc, slice::Iter};
 
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    text::ToLine,
     Frame,
 };
+use std::iter;
 
 use crate::app::App;
 use crate::wrappers::Item;
@@ -23,12 +23,8 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             items_vec.push(item);
         });
 
-        rectangles = Layout::horizontal(items_vec.iter().map(|item| {
-            let length = (item.item.get_title().to_line().width()
-                + frame.area().width as usize / items_vec.len()) as u16;
-            Constraint::Length(length)
-        }))
-        .split(frame.area());
+        rectangles = Layout::horizontal(iter::repeat(Constraint::Fill(1)).take(items_vec.len()))
+            .split(frame.area());
 
         render_items(frame, items_vec, rectangles.iter());
     }

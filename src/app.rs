@@ -57,7 +57,7 @@ impl App {
     /// Updating keys vector (for tracking of the current focus)
     pub fn update(&mut self, update: Event) {
         log::info!("UPDATE: {:?}", update);
-        log::debug!("Items now: {:?}", self.items);
+        //log::debug!("Items now: {:?}", self.items);
         let mut buffer: Vec<KeyRect> = Vec::new();
         if let Some(items) = self.get_items() {
             buffer = items.keys().cloned().map(KeyRect::new).collect();

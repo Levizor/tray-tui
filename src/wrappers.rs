@@ -1,3 +1,4 @@
+use std::iter;
 use std::ops::Deref;
 
 use ratatui::{
@@ -177,11 +178,8 @@ impl Widget for TrayMenuW<'_> {
     {
         self.app.box_stack.borrow_mut().clear();
         let menu_items = self.submenus.iter().map(|s| MenuItemW::new(s, self.app));
-        let rects = Layout::vertical(
-            vec![Constraint::Length(area.height / self.submenus.len() as u16); self.submenus.len()]
-                .iter(),
-        )
-        .split(area);
+        let rects = Layout::vertical(iter::repeat(Constraint::Fill(1)).take(self.submenus.len()))
+            .split(area);
 
         menu_items.zip(rects.iter()).for_each(|(m, r)| {
             self.app.box_stack.borrow_mut().push((m.id, *r));
