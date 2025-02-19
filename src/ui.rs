@@ -6,8 +6,8 @@ use ratatui::{
     Frame,
 };
 
+use crate::app::App;
 use crate::wrappers::Item;
-use crate::{app::App, wrappers::KeyRect};
 
 /// Renders the user interface widgets.
 pub fn render(app: &mut App, frame: &mut Frame) {
@@ -15,7 +15,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     if let Some(items) = app.get_items() {
         let mut items_vec: Vec<Item> = Vec::new();
         app.keys.iter().for_each(|k| {
-            let mut item = Item::new(items.get(&k.key).expect("not possible (I guess)"));
+            let mut item = Item::new(items.get(&k.key).expect("not possible (I guess)"), &app);
             item.set_focused(k.focused);
             items_vec.push(item);
         });

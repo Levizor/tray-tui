@@ -1,9 +1,6 @@
 use std::{
-    error::Error,
     fs::File,
     io,
-    thread::{self, Thread},
-    time::Duration,
 };
 
 use crate::{

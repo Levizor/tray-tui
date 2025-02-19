@@ -1,13 +1,18 @@
-use std::{cell::RefCell, ops::Deref};
+use std::ops::Deref;
 
 use ratatui::{
     buffer::Buffer,
-    layout::{self, Rect},
+    layout::{self, Constraint, Layout, Rect},
     style::{Color, Style},
     text::ToLine,
     widgets::Widget,
 };
-use system_tray::{item::StatusNotifierItem, menu::TrayMenu};
+use system_tray::{
+    item::StatusNotifierItem,
+    menu::{MenuItem, TrayMenu},
+};
+
+use crate::app::App;
 
 #[derive(Debug)]
 pub struct KeyRect {
@@ -61,15 +66,17 @@ pub struct Item<'a> {
     pub menu: Option<TrayMenuW<'a>>,
     pub rect: Rect,
     pub is_focused: bool,
+    app: &'a App,
 }
 
 impl<'a> Item<'a> {
-    pub fn new((item, menu): &'a (StatusNotifierItem, Option<TrayMenu>)) -> Self {
+    pub fn new((item, menu): &'a (StatusNotifierItem, Option<TrayMenu>), app: &'a App) -> Self {
         Self {
             item: StatusNotifierItemW::new(item),
-            menu: menu.as_ref().map(TrayMenuW::new),
+            menu: menu.as_ref().map(|tm| TrayMenuW::new(tm, app)),
             rect: Rect::default(),
             is_focused: false,
+            app,
         }
     }
 
@@ -145,11 +152,12 @@ impl Widget for StatusNotifierItemW<'_> {
 #[derive(Debug)]
 pub struct TrayMenuW<'a> {
     inner: &'a TrayMenu,
+    app: &'a App,
 }
 
 impl<'a> TrayMenuW<'a> {
-    pub fn new(menu: &'a TrayMenu) -> Self {
-        Self { inner: menu }
+    pub fn new(menu: &'a TrayMenu, app: &'a App) -> Self {
+        Self { inner: menu, app }
     }
 }
 
@@ -165,5 +173,55 @@ impl Widget for TrayMenuW<'_> {
     where
         Self: Sized,
     {
+        let menu_items = self.submenus.iter().map(|s| MenuItemW::new(s, self.app));
+        let rects = Layout::vertical(
+            vec![Constraint::Length(area.height / self.submenus.len() as u16); self.submenus.len()]
+                .iter(),
+        )
+        .split(area);
+
+        menu_items
+            .zip(rects.iter())
+            .for_each(|(m, r)| m.render(*r, buf));
+    }
+}
+
+#[derive(Debug)]
+pub struct MenuItemW<'a> {
+    inner: &'a MenuItem,
+    app: &'a App,
+}
+
+impl<'a> MenuItemW<'a> {
+    pub fn new(inner: &'a MenuItem, app: &'a App) -> Self {
+        Self { inner, app }
+    }
+}
+
+impl Deref for MenuItemW<'_> {
+    type Target = MenuItem;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl Widget for MenuItemW<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized,
+    {
+        let line = match &self.label {
+            Some(label) => label.to_line(),
+            None => self.id.to_line(),
+        };
+        buf.set_line(
+            area.x + (area.width.saturating_sub(line.width() as u16)) / 2,
+            area.y + (area.height.saturating_sub(1)) / 2,
+            &line,
+            area.width,
+        );
+        if !self.submenu.is_empty() {
+            return; // TODO
+        };
     }
 }

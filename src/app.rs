@@ -1,7 +1,7 @@
 use ratatui::layout::Rect;
 use std::{collections::HashMap, error, sync::Arc, sync::Mutex, sync::MutexGuard};
 use system_tray::{
-    client::{Client, Event, UpdateEvent},
+    client::{Client, Event},
     item::StatusNotifierItem,
     menu::TrayMenu,
 };
@@ -13,13 +13,16 @@ use crate::wrappers::KeyRect;
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
+pub struct AppState {}
+
 /// Application.
 #[derive(Debug)]
 pub struct App {
     pub running: bool,
     pub tray_rx: Mutex<Receiver<Event>>,
     items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
-    pub keys: Vec<KeyRect>,
+    pub keys: Vec<KeyRect>,            // for the StatusNotifierItem
+    pub box_stack: Vec<(usize, Rect)>, // for the tray menus
 }
 
 impl App {
@@ -30,6 +33,7 @@ impl App {
             tray_rx: Mutex::new(client.subscribe()),
             items: client.items(),
             keys: Vec::new(),
+            box_stack: Vec::new(),
         }
     }
 
