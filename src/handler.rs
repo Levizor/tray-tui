@@ -11,7 +11,7 @@ use system_tray::{
 use tui_tree_widget::Tree;
 
 /// Handles the key events and updates the state of [`App`].
-pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
+pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
     match key_event.code {
         // Exit application on `ESC` or `q`
         KeyCode::Esc | KeyCode::Char('q') => {
@@ -23,7 +23,35 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
                 app.quit();
             }
         }
-        // Other handlers you could add here.
+        KeyCode::Up | KeyCode::Char('k') => {
+            let tree_state = &mut app.menu_tree_state.borrow_mut();
+            tree_state.key_up();
+        }
+        KeyCode::Left | KeyCode::Char('h') => {
+            let tree_state = &mut app.menu_tree_state.borrow_mut();
+            tree_state.key_left();
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            let tree_state = &mut app.menu_tree_state.borrow_mut();
+            tree_state.key_down();
+        }
+        KeyCode::Right | KeyCode::Char('l') => {
+            let tree_state = &mut app.menu_tree_state.borrow_mut();
+            tree_state.key_right();
+        }
+        KeyCode::Enter => {
+            let mut tree_state = app.menu_tree_state.borrow_mut();
+            let id = tree_state.selected().get(0).cloned();
+            match id {
+                Some(id) => {
+                    drop(tree_state);
+                    let _ = activate_menu_item(id, app).await;
+                }
+                None => {
+                    let _ = tree_state.select_first();
+                }
+            }
+        }
         _ => {}
     }
     Ok(())
@@ -33,11 +61,19 @@ fn get_pos(mouse_event: MouseEvent) -> Position {
     Position::new(mouse_event.column, mouse_event.row)
 }
 
-fn get_focused_status_notifier_keyrect_mut(app: &mut App, pos: Position) -> Option<&mut KeyRect> {
+fn get_focused_sni(app: &App) -> Option<&KeyRect> {
+    app.keys.iter().find(|k| k.focused)
+}
+
+fn get_focused_sni_mut(app: &mut App) -> Option<&mut KeyRect> {
+    app.keys.iter_mut().find(|k| k.focused)
+}
+
+fn get_focused_sni_by_mouse_pos_mut(app: &mut App, pos: Position) -> Option<&mut KeyRect> {
     app.keys.iter_mut().find(|k| k.rect.contains(pos))
 }
 
-fn get_focused_status_notifier_keyrect(app: &App, pos: Position) -> Option<&KeyRect> {
+fn get_focused_sni_by_mouse_pos(app: &App, pos: Position) -> Option<&KeyRect> {
     app.keys.iter().find(|k| k.rect.contains(pos))
 }
 
@@ -70,13 +106,10 @@ impl FindById for TrayMenu {
         None
     }
 }
-async fn handle_click(mouse_event: MouseEvent, app: &App) -> Option<()> {
-    let pos = get_pos(mouse_event);
 
+async fn activate_menu_item(id: i32, app: &App) -> Option<()> {
     let mut tree_state = app.menu_tree_state.borrow_mut();
-    let opt_id = tree_state.rendered_at(pos);
-    let id = opt_id.map(|vec| vec[0])?;
-    let focused_sni = get_focused_status_notifier_keyrect(app, pos)?;
+    let focused_sni = get_focused_sni(app)?;
     let map = app.get_items()?;
     let (sni, menu) = map.get(&focused_sni.key)?;
     let menu = match menu {
@@ -100,7 +133,18 @@ async fn handle_click(mouse_event: MouseEvent, app: &App) -> Option<()> {
     } else {
         tree_state.toggle(vec![id]);
     }
+
     Some(())
+}
+
+async fn handle_click(mouse_event: MouseEvent, app: &App) -> Option<()> {
+    let pos = get_pos(mouse_event);
+    let id = app
+        .menu_tree_state
+        .borrow()
+        .rendered_at(pos)
+        .map(|vec| vec[0])?;
+    activate_menu_item(id, app).await
 }
 
 async fn handle_move(mouse_event: MouseEvent, app: &mut App) {
@@ -117,7 +161,7 @@ async fn handle_move(mouse_event: MouseEvent, app: &mut App) {
         }
     }
 
-    if let Some(k) = get_focused_status_notifier_keyrect_mut(app, pos) {
+    if let Some(k) = get_focused_sni_by_mouse_pos_mut(app, pos) {
         k.set_focused(true);
         app.focused_key = Some(k.key.clone());
     } else {
@@ -128,7 +172,7 @@ async fn handle_move(mouse_event: MouseEvent, app: &mut App) {
 pub async fn handle_mouse_event(mouse_event: MouseEvent, app: &mut App) -> AppResult<()> {
     match mouse_event.kind {
         crossterm::event::MouseEventKind::Down(MouseButton::Left) => {
-            handle_click(mouse_event, app).await
+            let _ = handle_click(mouse_event, app).await;
         }
         crossterm::event::MouseEventKind::Down(MouseButton::Right) => {}
         crossterm::event::MouseEventKind::Down(MouseButton::Middle) => {}

@@ -210,7 +210,8 @@ impl Widget for TrayMenuW<'_> {
 
         if let Some(tree) = tree {
             StatefulWidget::render(
-                tree.block(Block::bordered()),
+                tree.block(Block::bordered())
+                    .highlight_style(Style::default().bg(Color::Green)),
                 area,
                 buf,
                 &mut self.app.menu_tree_state.borrow_mut(),
