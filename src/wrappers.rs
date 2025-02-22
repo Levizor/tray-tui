@@ -1,6 +1,7 @@
-use std::iter;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
+use std::{iter, vec};
 
+use ratatui::widgets::{Block, StatefulWidget};
 use ratatui::{
     buffer::Buffer,
     layout::{self, Constraint, Layout, Rect},
@@ -12,6 +13,8 @@ use system_tray::{
     item::StatusNotifierItem,
     menu::{MenuItem, MenuType, TrayMenu},
 };
+
+use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 use crate::app::App;
 
@@ -60,7 +63,7 @@ impl PartialEq for KeyRect {
 
 impl Eq for KeyRect {}
 
-/// Wrapper around set of StatusNotifierItem and TrayMenu
+/// Wrapper around set of [StatusNotifierItem] and [TrayMenu]
 #[derive(Debug)]
 pub struct Item<'a> {
     pub id: String,
@@ -171,25 +174,63 @@ impl Deref for TrayMenuW<'_> {
     }
 }
 
+fn menuitem_to_treeitem(menu_item: &MenuItem) -> Option<TreeItem<i32>> {
+    if menu_item.submenu.is_empty() {
+        match &menu_item.label {
+            Some(label) => return Some(TreeItem::new_leaf(menu_item.id, label.clone())),
+            None => return None,
+        }
+    }
+    let children = menuitems_to_treeitems(&menu_item.submenu);
+    let root = TreeItem::new(
+        menu_item.id,
+        menu_item.label.clone().unwrap_or(String::from("no_label")),
+        children,
+    );
+
+    root.ok()
+}
+
+fn menuitems_to_treeitems(menu_items: &Vec<MenuItem>) -> Vec<TreeItem<i32>> {
+    menu_items
+        .iter()
+        .map(|menu_item| menuitem_to_treeitem(menu_item))
+        .filter_map(|x| x)
+        .collect()
+}
+
 impl Widget for TrayMenuW<'_> {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
     {
-        let menu_items: Vec<_> = self
-            .submenus
-            .iter()
-            .filter(|m| m.menu_type != MenuType::Separator)
-            .map(|s| MenuItemW::new(s, self.app))
-            .collect();
-        let rects =
-            Layout::vertical(iter::repeat(Constraint::Fill(1)).take(menu_items.len())).split(area);
+        let children = menuitems_to_treeitems(&self.submenus);
 
-        menu_items.into_iter().zip(rects.iter()).for_each(|(m, r)| {
-            self.app.box_stack.borrow_mut().push((m.id, *r));
-            m.render(*r, buf)
-        });
-        self.app.box_stack.borrow_mut().clear();
+        let tree = Tree::new(&children).ok();
+
+        if let Some(tree) = tree {
+            StatefulWidget::render(
+                tree.block(Block::bordered()),
+                area,
+                buf,
+                &mut self.app.menu_tree_state.borrow_mut(),
+            );
+        }
+
+        //let menu_items: Vec<_> = self
+        //    .submenus
+        //    .iter()
+        //    .filter(|m| m.menu_type != MenuType::Separator)
+        //    .map(|s| MenuItemW::new(s, self.app))
+        //    .collect();
+        //let rects =
+        //    Layout::vertical(iter::repeat(Constraint::Fill(1)).take(menu_items.len())).split(area);
+        //
+        //menu_items.into_iter().zip(rects.iter()).for_each(|(m, r)| {
+        //    self.app.box_stack.borrow_mut().push((m.id, *r));
+        //    m.render(*r, buf)
+        //});
+        //self.app.box_stack.borrow_mut().clear();
     }
 }
 

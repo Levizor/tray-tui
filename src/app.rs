@@ -10,6 +10,7 @@ use system_tray::{
     item::StatusNotifierItem,
     menu::TrayMenu,
 };
+use tui_tree_widget::TreeState;
 
 use tokio::sync::broadcast::Receiver;
 
@@ -37,7 +38,7 @@ pub struct App {
     items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
     pub keys: Vec<KeyRect>, // for the StatusNotifierItem
     pub focused_key: Option<String>,
-    pub box_stack: RefCell<Vec<(i32, Rect)>>, // for the tray menus
+    pub menu_tree_state: RefCell<TreeState<i32>>,
 }
 
 impl App {
@@ -48,16 +49,15 @@ impl App {
             tray_rx: Mutex::new(client.subscribe()),
             items: client.items(),
             keys: Vec::new(),
-            box_stack: RefCell::default(),
             client,
             focused_key: None,
+            menu_tree_state: RefCell::default(),
         }
     }
 
     /// Updating keys vector (for tracking of the current focus)
     pub fn update(&mut self, update: Event) {
         log::info!("UPDATE: {:?}", update);
-        //log::debug!("Items now: {:?}", self.items);
         let mut buffer: Vec<KeyRect> = Vec::new();
         if let Some(items) = self.get_items() {
             buffer = items.keys().cloned().map(KeyRect::new).collect();

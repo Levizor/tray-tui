@@ -1535,6 +1535,7 @@ dependencies = [
  "simplelog",
  "system-tray",
  "tokio",
+ "tui-tree-widget",
 ]
 
 [[package]]
@@ -1542,6 +1543,16 @@ name = "trim-in-place"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "343e926fc669bc8cde4fa3129ab681c63671bae288b1f1081ceee6d9d37904fc"
+
+[[package]]
+name = "tui-tree-widget"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc95ebc9c578c67223514d0e10a75c3b996d1f22dc93a4792475260f7c3c11e"
+dependencies = [
+ "ratatui",
+ "unicode-width 0.2.0",
+]
 
 [[package]]
 name = "typenum"
