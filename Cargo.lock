@@ -1529,6 +1529,7 @@ dependencies = [
  "config",
  "crossterm",
  "futures",
+ "indexmap",
  "log",
  "ratatui",
  "serde",

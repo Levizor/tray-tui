@@ -82,7 +82,7 @@ async fn main() -> AppResult<()> {
                     Event::Resize(_, _) => {tui.draw(&mut app).unwrap()}
                     Event::FocusLost => {
                         log::info!("FocusLost");
-                        app.focused_key=None;
+                        app.focused_sni=None;
                     }
                 }
             }

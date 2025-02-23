@@ -1,7 +1,8 @@
-use ratatui::layout::Rect;
+use indexmap::IndexMap;
+use ratatui::layout::{Position, Rect};
 use std::{
-    cell::RefCell,
-    collections::HashMap,
+    cell::{Ref, RefMut},
+    collections::{HashMap, HashSet},
     error,
     sync::{Arc, Mutex, MutexGuard},
 };
@@ -14,7 +15,7 @@ use tui_tree_widget::TreeState;
 
 use tokio::sync::broadcast::Receiver;
 
-use crate::wrappers::KeyRect;
+use crate::wrappers::SniState;
 
 pub type BoxStack = Vec<(i32, Rect)>;
 
@@ -32,13 +33,15 @@ pub struct AppState {}
 /// Application.
 #[derive(Debug)]
 pub struct App {
-    pub client: Client,
     pub running: bool,
-    pub tray_rx: Mutex<Receiver<Event>>,
+    /// system-tray client
+    pub client: Client,
+    /// states saved for each [StatusNotifierItem] and their [TrayMenu]
+    pub sni_states: IndexMap<String, SniState>, // for the StatusNotifierItem
+    pub focused_sni: Option<usize>,
+    /// items map from system-tray
     items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
-    pub keys: Vec<KeyRect>, // for the StatusNotifierItem
-    pub focused_key: Option<String>,
-    pub menu_tree_state: RefCell<TreeState<i32>>,
+    pub tray_rx: Mutex<Receiver<Event>>,
 }
 
 impl App {
@@ -48,22 +51,38 @@ impl App {
             running: true,
             tray_rx: Mutex::new(client.subscribe()),
             items: client.items(),
-            keys: Vec::new(),
+            sni_states: IndexMap::default(),
             client,
-            focused_key: None,
-            menu_tree_state: RefCell::default(),
+            focused_sni: None,
         }
     }
 
     /// Updating keys vector (for tracking of the current focus)
     pub fn update(&mut self, update: Event) {
         log::info!("UPDATE: {:?}", update);
-        let mut buffer: Vec<KeyRect> = Vec::new();
+        let mut buffer: HashSet<String> = HashSet::default();
         if let Some(items) = self.get_items() {
-            buffer = items.keys().cloned().map(KeyRect::new).collect();
-            buffer.sort();
+            buffer = items.keys().cloned().collect();
         }
-        self.keys = buffer;
+        if buffer.len() == self.sni_states.len() {
+            return;
+        }
+        for key in &buffer {
+            self.sni_states
+                .entry(key.to_string())
+                .or_insert_with(|| SniState::new());
+        }
+        self.sni_states.retain(|key, _| buffer.contains(key));
+        if let Some(index) = self.get_focused_sni_index() {
+            if let Some((_, v)) = self.sni_states.get_index_mut(*index) {
+                v.set_focused(true);
+                return;
+            }
+        }
+        if let Some((_, v)) = self.sni_states.first_mut() {
+            v.set_focused(true);
+            self.focused_sni = Some(0);
+        }
     }
 
     /// Handles the tick event of the terminal.
@@ -81,5 +100,87 @@ impl App {
             Ok(items) => Some(items),
             Err(_) => None,
         }
+    }
+
+    pub fn get_focused_sni_key(&self) -> Option<&String> {
+        self.sni_states
+            .get_index(*self.get_focused_sni_index()?)
+            .map(|(k, _)| k)
+    }
+
+    pub fn get_focused_sni_index(&self) -> Option<&usize> {
+        self.focused_sni.as_ref()
+    }
+
+    pub fn get_focused_sni_state(&self) -> Option<&SniState> {
+        if let Some(key) = self.focused_sni {
+            let (_, v) = self.sni_states.get_index(key)?;
+            return Some(v);
+        }
+        None
+    }
+
+    pub fn get_focused_sni_state_mut(&mut self) -> Option<&mut SniState> {
+        if let Some(key) = self.focused_sni {
+            let (_, v) = self.sni_states.get_index_mut(key)?;
+            return Some(v);
+        }
+        None
+    }
+
+    pub fn get_focused_sni_key_by_position(&mut self, pos: Position) -> Option<String> {
+        self.sni_states
+            .iter()
+            .find(|(_, v)| v.rect.contains(pos))
+            .map(|(k, _)| k.to_string())
+    }
+
+    pub fn get_focused_tree_state(&self) -> Option<Ref<TreeState<i32>>> {
+        self.get_focused_sni_state()
+            .map(|sni| sni.tree_state.borrow())
+    }
+
+    pub fn get_focused_tree_state_mut(&self) -> Option<RefMut<TreeState<i32>>> {
+        self.get_focused_sni_state()
+            .map(|sni| sni.tree_state.borrow_mut())
+    }
+
+    pub fn move_focus_to_right(&mut self) -> Option<()> {
+        let len = self.sni_states.len();
+        if len <= 1 {
+            return Some(());
+        }
+
+        let index = self.get_focused_sni_index()?.clone();
+        self.sni_states.get_index_mut(index)?.1.focused = false;
+
+        let new_index = (index + 1) % len;
+
+        let (_, val) = self.sni_states.get_index_mut(new_index)?;
+        val.focused = true;
+        self.focused_sni = Some(new_index);
+
+        Some(())
+    }
+
+    pub fn move_focus_to_left(&mut self) -> Option<()> {
+        let len = self.sni_states.len();
+        if len <= 1 {
+            return Some(());
+        }
+
+        let index = self.get_focused_sni_index()?.clone();
+        self.sni_states.get_index_mut(index)?.1.focused = false;
+
+        let new_index = match index {
+            0 => len - 1,
+            _ => index - 1,
+        };
+
+        let (_, val) = self.sni_states.get_index_mut(new_index)?;
+        val.focused = true;
+        self.focused_sni = Some(new_index);
+
+        Some(())
     }
 }

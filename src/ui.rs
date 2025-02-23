@@ -14,12 +14,8 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     let mut rectangles: Rc<[Rect]> = Rc::default();
     if let Some(items) = app.get_items() {
         let mut items_vec: Vec<Item> = Vec::new();
-        app.keys.iter().for_each(|k| {
-            let item = Item::new(
-                k.key.clone(),
-                items.get(&k.key).expect("not possible (I guess)"),
-                &app,
-            );
+        app.sni_states.iter().for_each(|(k, v)| {
+            let item = Item::new(v, items.get(k).expect("not possible (I hope)"));
             items_vec.push(item);
         });
 
@@ -29,12 +25,10 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         render_items(frame, items_vec, rectangles.iter());
     }
 
-    app.keys
-        .iter_mut()
+    app.sni_states
+        .values_mut()
         .zip(rectangles.iter())
-        .for_each(|(k, ar)| k.set_rect(*ar));
-
-    log::info!("{:?}", app.keys);
+        .for_each(|(v, ar)| v.set_rect(*ar));
 }
 
 fn render_items(frame: &mut Frame, items: Vec<Item>, rects_iter: std::slice::Iter<'_, Rect>) {

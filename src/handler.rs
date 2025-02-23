@@ -1,14 +1,11 @@
-use crate::{
-    app::{App, AppResult},
-    wrappers::KeyRect,
-};
+use crate::app::{App, AppResult};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent};
 use ratatui::layout::Position;
 use system_tray::{
     client::ActivateRequest,
     menu::{MenuItem, TrayMenu},
 };
-use tui_tree_widget::Tree;
+use tui_tree_widget::TreeState;
 
 /// Handles the key events and updates the state of [`App`].
 pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
@@ -23,29 +20,35 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
                 app.quit();
             }
         }
-        KeyCode::Up | KeyCode::Char('k') => {
-            let tree_state = &mut app.menu_tree_state.borrow_mut();
-            tree_state.key_up();
-        }
         KeyCode::Left | KeyCode::Char('h') => {
-            let tree_state = &mut app.menu_tree_state.borrow_mut();
-            tree_state.key_left();
-        }
-        KeyCode::Down | KeyCode::Char('j') => {
-            let tree_state = &mut app.menu_tree_state.borrow_mut();
-            tree_state.key_down();
+            app.move_focus_to_left();
         }
         KeyCode::Right | KeyCode::Char('l') => {
-            let tree_state = &mut app.menu_tree_state.borrow_mut();
-            tree_state.key_right();
+            app.move_focus_to_right();
+        }
+        _ => {}
+    }
+    let tree_state = app.get_focused_tree_state_mut();
+    if tree_state.is_none() {
+        return Ok(());
+    }
+    let mut tree_state = &mut tree_state.unwrap();
+    match key_event.code {
+        KeyCode::Up | KeyCode::Char('k') => {
+            if !tree_state.key_up() {
+                tree_state.select_last();
+            }
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            if !tree_state.key_down() {
+                tree_state.select_first();
+            }
         }
         KeyCode::Enter => {
-            let mut tree_state = app.menu_tree_state.borrow_mut();
             let id = tree_state.selected().get(0).cloned();
             match id {
                 Some(id) => {
-                    drop(tree_state);
-                    let _ = activate_menu_item(id, app).await;
+                    let _ = activate_menu_item(id, app, &mut tree_state).await;
                 }
                 None => {
                     let _ = tree_state.select_first();
@@ -54,27 +57,12 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
         }
         _ => {}
     }
+
     Ok(())
 }
 
 fn get_pos(mouse_event: MouseEvent) -> Position {
     Position::new(mouse_event.column, mouse_event.row)
-}
-
-fn get_focused_sni(app: &App) -> Option<&KeyRect> {
-    app.keys.iter().find(|k| k.focused)
-}
-
-fn get_focused_sni_mut(app: &mut App) -> Option<&mut KeyRect> {
-    app.keys.iter_mut().find(|k| k.focused)
-}
-
-fn get_focused_sni_by_mouse_pos_mut(app: &mut App, pos: Position) -> Option<&mut KeyRect> {
-    app.keys.iter_mut().find(|k| k.rect.contains(pos))
-}
-
-fn get_focused_sni_by_mouse_pos(app: &App, pos: Position) -> Option<&KeyRect> {
-    app.keys.iter().find(|k| k.rect.contains(pos))
 }
 
 trait FindById {
@@ -107,11 +95,10 @@ impl FindById for TrayMenu {
     }
 }
 
-async fn activate_menu_item(id: i32, app: &App) -> Option<()> {
-    let mut tree_state = app.menu_tree_state.borrow_mut();
-    let focused_sni = get_focused_sni(app)?;
+async fn activate_menu_item(id: i32, app: &App, tree_state: &mut TreeState<i32>) -> Option<()> {
+    let sni_key = app.get_focused_sni_key()?;
     let map = app.get_items()?;
-    let (sni, menu) = map.get(&focused_sni.key)?;
+    let (sni, menu) = map.get(sni_key)?;
     let menu = match menu {
         Some(menu) => menu,
         None => return None,
@@ -124,7 +111,7 @@ async fn activate_menu_item(id: i32, app: &App) -> Option<()> {
             let _ = app
                 .client
                 .activate(ActivateRequest::MenuItem {
-                    address: focused_sni.key.clone(),
+                    address: sni_key.to_string(),
                     menu_path: path.to_string(),
                     submenu_id: id,
                 })
@@ -139,34 +126,37 @@ async fn activate_menu_item(id: i32, app: &App) -> Option<()> {
 
 async fn handle_click(mouse_event: MouseEvent, app: &App) -> Option<()> {
     let pos = get_pos(mouse_event);
-    let id = app
-        .menu_tree_state
-        .borrow()
-        .rendered_at(pos)
-        .map(|vec| vec[0])?;
-    activate_menu_item(id, app).await
+    let mut tree_state = &mut app.get_focused_tree_state_mut()?;
+    let id = tree_state.rendered_at(pos).map(|vec| vec[0])?;
+    activate_menu_item(id, app, &mut tree_state).await?;
+    None
 }
 
-async fn handle_move(mouse_event: MouseEvent, app: &mut App) {
+async fn handle_move(mouse_event: MouseEvent, app: &mut App) -> Option<()> {
     let pos = get_pos(mouse_event);
-    if let Some(key) = &app.focused_key {
-        if let Some(keyrect) = app.keys.iter_mut().find(|k| k.key.eq(key)) {
-            if keyrect.rect.contains(pos) {
-                keyrect.set_focused(true);
-                return;
+    if let Some(index) = app.focused_sni {
+        if let Some((_, sni_state)) = app.sni_states.get_index_mut(index) {
+            if sni_state.rect.contains(pos) {
+                let mut tree_state = app.get_focused_tree_state_mut()?;
+                let rendered = tree_state.rendered_at(pos)?.get(0)?.clone();
+                tree_state.select(vec![rendered]);
+                return None;
             } else {
-                keyrect.set_focused(false);
-                let _ = app.menu_tree_state.take();
+                sni_state.set_focused(false);
+                app.focused_sni = None;
             }
         }
     }
 
-    if let Some(k) = get_focused_sni_by_mouse_pos_mut(app, pos) {
-        k.set_focused(true);
-        app.focused_key = Some(k.key.clone());
+    if let Some(k) = &app.get_focused_sni_key_by_position(pos) {
+        if let Some(state_tree) = app.sni_states.get_mut(k) {
+            state_tree.set_focused(true);
+            app.focused_sni = app.sni_states.get_index_of(k);
+        }
     } else {
-        app.focused_key = None;
+        app.focused_sni = None;
     }
+    Some(())
 }
 
 pub async fn handle_mouse_event(mouse_event: MouseEvent, app: &mut App) -> AppResult<()> {
@@ -176,7 +166,9 @@ pub async fn handle_mouse_event(mouse_event: MouseEvent, app: &mut App) -> AppRe
         }
         crossterm::event::MouseEventKind::Down(MouseButton::Right) => {}
         crossterm::event::MouseEventKind::Down(MouseButton::Middle) => {}
-        crossterm::event::MouseEventKind::Moved => handle_move(mouse_event, app).await,
+        crossterm::event::MouseEventKind::Moved => {
+            let _ = handle_move(mouse_event, app).await;
+        }
         _ => {}
     }
     Ok(())
