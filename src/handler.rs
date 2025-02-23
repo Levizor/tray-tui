@@ -108,13 +108,17 @@ async fn activate_menu_item(id: i32, app: &App, tree_state: &mut TreeState<i32>)
 
     if item.submenu.is_empty() {
         if let Some(path) = &sni.menu {
+            let activate_request = ActivateRequest::MenuItem {
+                address: sni_key.to_string(),
+                menu_path: path.to_string(),
+                submenu_id: id,
+            };
+            log::debug!("{:?}", activate_request);
+            let _ = app.client.activate(activate_request).await;
+
             let _ = app
                 .client
-                .activate(ActivateRequest::MenuItem {
-                    address: sni_key.to_string(),
-                    menu_path: path.to_string(),
-                    submenu_id: id,
-                })
+                .about_to_show_menuitem(sni_key.to_string(), path.to_string(), 0)
                 .await;
         }
     } else {
