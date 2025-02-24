@@ -1,0 +1,42 @@
+# Whether to sort tray items by their titles
+sorting = false
+
+# how menus are placed
+allignment = "horizontal" 
+
+[colors]
+# background color for menu
+bg = "reset" 
+
+# background color for focused menu
+bg_focused = "reset"
+
+# foreground color for menu
+fg = "white"
+
+# foreground color for focused menu
+fg_focused = "white"
+
+# background color for highlighted item in menu
+bg_highlighted = "green"
+
+# foreground color for highlighted item in menu
+fg_highlighted = "black"
+
+# foreground color for border
+border_fg = "white"
+
+# foreground color for focused border
+border_fg_focused = "green"
+
+# backrgound color for border
+border_bg = "reset"
+
+# backrgound color for focused border
+border_bg_focused = "reset"
+
+[symbols]
+highlight_symbol = ""
+node_open_symbol = " ▶ "
+node_closed_symbol = " ⏷ "
+node_no_children_symbol = " "
