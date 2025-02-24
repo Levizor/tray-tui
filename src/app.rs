@@ -23,14 +23,6 @@ pub type BoxStack = Vec<(i32, Rect)>;
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
-#[derive(Debug)]
-pub enum BoxStackKey {
-    StatusNotifierItemId(String),
-    MenuId(i32),
-}
-
-pub struct AppState {}
-
 /// Application.
 #[derive(Debug)]
 pub struct App {
@@ -65,7 +57,7 @@ impl App {
     /// Updating states
     pub fn update(&mut self, update: Event) {
         log::info!("UPDATE: {:?}", update);
-        log::debug!("ITEMS NOW: {:?}", self.get_items().unwrap());
+        //log::debug!("ITEMS NOW: {:?}", self.get_items().unwrap());
         let mut buffer: HashSet<String> = HashSet::default();
         if let Some(items) = self.get_items() {
             buffer = items.keys().cloned().collect();
@@ -91,9 +83,6 @@ impl App {
         }
         // TODO sorting
     }
-
-    /// Handles the tick event of the terminal.
-    pub fn tick(&self) {}
 
     /// Set running to false to quit the application.
     pub fn quit(&mut self) {
