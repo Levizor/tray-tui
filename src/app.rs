@@ -15,7 +15,7 @@ use tui_tree_widget::TreeState;
 
 use tokio::sync::broadcast::Receiver;
 
-use crate::wrappers::{GetTitle, SniState};
+use crate::wrappers::SniState;
 use crate::Config;
 
 pub type BoxStack = Vec<(i32, Rect)>;
