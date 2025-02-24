@@ -102,11 +102,11 @@ impl<'a> Item<'a> {
         (colors.bg_highlighted, colors.fg_highlighted)
     }
 
-    pub fn get_border_color(&self) -> Color {
+    pub fn get_border_color(&self) -> (Color, Color) {
         let colors = &self.config.colors;
         match self.sni_state.focused {
-            true => colors.border_focused,
-            false => colors.border,
+            true => (colors.border_bg_focused, colors.border_fg_focused),
+            false => (colors.border_bg, colors.border_fg),
         }
     }
 }
@@ -116,7 +116,8 @@ impl Widget for Item<'_> {
         let title = self.get_title().clone();
         let (bg, fg) = self.get_colors();
         let (bg_h, fg_h) = self.get_highlight_colors();
-        let border = self.get_border_color();
+        let (border_bg, border_fg) = self.get_border_color();
+        let symbols = &self.config.symbols;
 
         if let Some(menu) = self.menu {
             let children = menuitems_to_treeitems(&menu.submenus);
@@ -126,11 +127,15 @@ impl Widget for Item<'_> {
             if let Some(mut tree) = tree {
                 tree = tree
                     .style(Style::default().bg(bg).fg(fg))
-                    .highlight_style(Style::default().bg(bg_h).fg(fg_h));
+                    .highlight_style(Style::default().bg(bg_h).fg(fg_h))
+                    .highlight_symbol(&symbols.highlight_symbol)
+                    .node_open_symbol(&symbols.node_open_symbol)
+                    .node_closed_symbol(&symbols.node_closed_symbol)
+                    .node_no_children_symbol(&symbols.node_no_children_symbol);
                 tree = tree.block(
                     Block::bordered()
                         .title(title)
-                        .border_style(Style::default().fg(border)),
+                        .border_style(Style::default().fg(border_fg).bg(border_bg)),
                 );
 
                 StatefulWidget::render(

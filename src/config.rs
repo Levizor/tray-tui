@@ -19,11 +19,61 @@ pub struct Config {
 
     #[serde(default = "colors")]
     pub colors: Colors,
+
+    #[serde(default = "symbols")]
+    pub symbols: Symbols,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Symbols {
+    #[serde(default = "highlight_symbol")]
+    pub highlight_symbol: String,
+
+    #[serde(default = "node_closed_symbol")]
+    pub node_closed_symbol: String,
+
+    #[serde(default = "node_open_symbol")]
+    pub node_open_symbol: String,
+
+    #[serde(default = "node_no_children_symbol")]
+    pub node_no_children_symbol: String,
+}
+
+impl Default for Symbols {
+    fn default() -> Self {
+        Self {
+            highlight_symbol: highlight_symbol(),
+            node_open_symbol: node_open_symbol(),
+            node_closed_symbol: node_closed_symbol(),
+            node_no_children_symbol: node_no_children_symbol(),
+        }
+    }
+}
+
+fn symbols() -> Symbols {
+    Symbols::default()
+}
+
+fn highlight_symbol() -> String {
+    String::new()
+}
+
+fn node_closed_symbol() -> String {
+    String::from(" ⏷ ")
+}
+
+fn node_open_symbol() -> String {
+    String::from(" ▶ ")
+}
+
+fn node_no_children_symbol() -> String {
+    String::from(" ")
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
+            symbols: symbols(),
             allignment: allignment(),
             colors: colors(),
         }
@@ -74,7 +124,10 @@ pub struct Colors {
     pub fg: Color,
 
     #[serde(default = "white")]
-    pub border: Color,
+    pub border_fg: Color,
+
+    #[serde(default = "reset")]
+    pub border_bg: Color,
 
     #[serde(default = "reset")]
     pub bg_focused: Color,
@@ -83,7 +136,10 @@ pub struct Colors {
     pub fg_focused: Color,
 
     #[serde(default = "green")]
-    pub border_focused: Color,
+    pub border_fg_focused: Color,
+
+    #[serde(default = "reset")]
+    pub border_bg_focused: Color,
 
     #[serde(default = "green")]
     pub bg_highlighted: Color,
@@ -97,10 +153,12 @@ impl Default for Colors {
         Self {
             bg: reset(),
             fg: white(),
-            border: white(),
+            border_fg: white(),
+            border_bg: reset(),
             bg_focused: reset(),
             fg_focused: white(),
-            border_focused: green(),
+            border_fg_focused: green(),
+            border_bg_focused: reset(),
             bg_highlighted: green(),
             fg_highlighted: black(),
         }
