@@ -19,9 +19,16 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             items_vec.push(item);
         });
 
-        rectangles = Layout::horizontal(iter::repeat(Constraint::Fill(1)).take(items_vec.len()))
-            .split(frame.area());
-
+        rectangles = match app.config.allignment {
+            crate::config::Allignment::Horizontal => {
+                Layout::horizontal(iter::repeat(Constraint::Fill(1)).take(items_vec.len()))
+                    .split(frame.area())
+            }
+            crate::config::Allignment::Vertical => {
+                Layout::vertical(iter::repeat(Constraint::Fill(1)).take(items_vec.len()))
+                    .split(frame.area())
+            }
+        };
         render_items(frame, items_vec, rectangles.iter());
     }
 
