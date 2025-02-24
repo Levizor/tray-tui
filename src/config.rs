@@ -23,6 +23,41 @@ pub struct Config {
     pub colors: Colors,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            allignment: allignment(),
+            colors: colors(),
+        }
+    }
+}
+
+impl Config {
+    pub fn new(path: &Option<String>) -> Result<Self, Box<dyn Error>> {
+        let builder = config::Config::builder();
+        let builder = match path {
+            Some(path) => builder.add_source(
+                config::File::from(PathBuf::from_str(&path).expect("Infallible"))
+                    .format(config::FileFormat::Toml),
+            ),
+            None => {
+                let path = get_default_config_path()?;
+                if !path.exists() {
+                    log::info!("Config file not found. Using default configuration.");
+                    return Ok(Self::default());
+                }
+                builder.add_source(
+                    config::File::from(get_default_config_path().expect("Infallible"))
+                        .format(config::FileFormat::Toml),
+                )
+            }
+        };
+
+        let config = builder.build()?.try_deserialize::<Config>()?;
+        Ok(config)
+    }
+}
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum Allignment {
