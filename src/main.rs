@@ -77,6 +77,7 @@ async fn main() -> AppResult<()> {
                 match event {
                     Event::Key(key_event) => handle_key_events(key_event, &mut app).await?,
                     Event::Mouse(mouse_event) => {
+
                         handle_mouse_event(mouse_event, &mut app).await?
                     },
                     Event::Resize(_, _) => {tui.draw(&mut app).unwrap()}

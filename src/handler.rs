@@ -1,5 +1,5 @@
 use crate::app::{App, AppResult};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
 use system_tray::{
     client::ActivateRequest,
@@ -131,8 +131,24 @@ async fn activate_menu_item(id: i32, app: &App, tree_state: &mut TreeState<i32>)
 async fn handle_click(mouse_event: MouseEvent, app: &App) -> Option<()> {
     let pos = get_pos(mouse_event);
     let mut tree_state = &mut app.get_focused_tree_state_mut()?;
-    let id = tree_state.rendered_at(pos).map(|vec| vec[0])?;
+    let id = tree_state
+        .rendered_at(pos)
+        .map(|vec| *vec.last().unwrap())?;
     activate_menu_item(id, app, &mut tree_state).await?;
+    None
+}
+
+fn handle_scroll(mouse_event: MouseEvent, app: &App) -> Option<()> {
+    let mut tree_state = app.get_focused_tree_state_mut()?;
+    match mouse_event.kind {
+        MouseEventKind::ScrollUp => {
+            tree_state.scroll_up(1);
+        }
+        MouseEventKind::ScrollDown => {
+            tree_state.scroll_down(1);
+        }
+        _ => {}
+    }
     None
 }
 
@@ -142,8 +158,8 @@ async fn handle_move(mouse_event: MouseEvent, app: &mut App) -> Option<()> {
         if let Some((_, sni_state)) = app.sni_states.get_index_mut(index) {
             if sni_state.rect.contains(pos) {
                 let mut tree_state = app.get_focused_tree_state_mut()?;
-                let rendered = tree_state.rendered_at(pos)?.get(0)?.clone();
-                tree_state.select(vec![rendered]);
+                let rendered = tree_state.rendered_at(pos)?.to_owned();
+                tree_state.select(rendered.to_vec());
                 return None;
             } else {
                 sni_state.set_focused(false);
@@ -165,13 +181,16 @@ async fn handle_move(mouse_event: MouseEvent, app: &mut App) -> Option<()> {
 
 pub async fn handle_mouse_event(mouse_event: MouseEvent, app: &mut App) -> AppResult<()> {
     match mouse_event.kind {
-        crossterm::event::MouseEventKind::Down(MouseButton::Left) => {
+        MouseEventKind::Down(MouseButton::Left) => {
             let _ = handle_click(mouse_event, app).await;
         }
-        crossterm::event::MouseEventKind::Down(MouseButton::Right) => {}
-        crossterm::event::MouseEventKind::Down(MouseButton::Middle) => {}
-        crossterm::event::MouseEventKind::Moved => {
+        MouseEventKind::Down(MouseButton::Right) => {}
+        MouseEventKind::Down(MouseButton::Middle) => {}
+        MouseEventKind::Moved => {
             let _ = handle_move(mouse_event, app).await;
+        }
+        MouseEventKind::ScrollUp | MouseEventKind::ScrollDown => {
+            let _ = handle_scroll(mouse_event, app);
         }
         _ => {}
     }
