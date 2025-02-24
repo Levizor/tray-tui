@@ -9,6 +9,7 @@ use crate::{
 };
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
+use config::Config;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use simplelog::{CombinedLogger, Config as Conf, LevelFilter, WriteLogger};
 
@@ -25,16 +26,16 @@ pub mod wrappers;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-    let config = Cli::parse();
+    let cli = Cli::parse();
 
-    if let Some(shell) = config.completions {
+    if let Some(shell) = cli.completions {
         let mut cmd = Cli::command();
         let mut out = io::stdout();
         generate(shell, &mut cmd, "tray-tui", &mut out);
         return Ok(());
     }
 
-    if config.debug {
+    if cli.debug {
         CombinedLogger::init(vec![WriteLogger::new(
             LevelFilter::Debug,
             Conf::default(),
@@ -42,6 +43,8 @@ async fn main() -> AppResult<()> {
         )])
         .unwrap();
     }
+
+    let config = Config::new(&cli.config_path)?;
 
     let client = Client::new().await.unwrap();
     log::info!("Client is initialized");
@@ -55,7 +58,7 @@ async fn main() -> AppResult<()> {
     );
 
     // Create an application.
-    let mut app = App::new(client);
+    let mut app = App::new(client, config);
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stdout());

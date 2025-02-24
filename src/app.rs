@@ -16,6 +16,7 @@ use tui_tree_widget::TreeState;
 use tokio::sync::broadcast::Receiver;
 
 use crate::wrappers::SniState;
+use crate::Config;
 
 pub type BoxStack = Vec<(i32, Rect)>;
 
@@ -34,6 +35,8 @@ pub struct AppState {}
 #[derive(Debug)]
 pub struct App {
     pub running: bool,
+    /// Config
+    pub config: Config,
     /// system-tray client
     pub client: Client,
     /// states saved for each [StatusNotifierItem] and their [TrayMenu]
@@ -46,9 +49,10 @@ pub struct App {
 
 impl App {
     /// Constructs a new instance of [`App`].
-    pub fn new(client: Client) -> Self {
+    pub fn new(client: Client, config: Config) -> Self {
         Self {
             running: true,
+            config,
             tray_rx: Mutex::new(client.subscribe()),
             items: client.items(),
             sni_states: IndexMap::default(),
