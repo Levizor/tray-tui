@@ -17,6 +17,9 @@ pub struct Config {
     #[serde(default = "allignment")]
     pub allignment: Allignment,
 
+    #[serde(default = "sorting")]
+    pub sorting: bool,
+
     #[serde(default = "colors")]
     pub colors: Colors,
 
@@ -50,29 +53,10 @@ impl Default for Symbols {
     }
 }
 
-fn symbols() -> Symbols {
-    Symbols::default()
-}
-
-fn highlight_symbol() -> String {
-    String::new()
-}
-
-fn node_closed_symbol() -> String {
-    String::from(" ⏷ ")
-}
-
-fn node_open_symbol() -> String {
-    String::from(" ▶ ")
-}
-
-fn node_no_children_symbol() -> String {
-    String::from(" ")
-}
-
 impl Default for Config {
     fn default() -> Self {
         Self {
+            sorting: sorting(),
             symbols: symbols(),
             allignment: allignment(),
             colors: colors(),
@@ -182,4 +166,28 @@ const fn white() -> Color {
 
 const fn green() -> Color {
     Color::Green
+}
+
+const fn sorting() -> bool {
+    false
+}
+
+fn symbols() -> Symbols {
+    Symbols::default()
+}
+
+fn highlight_symbol() -> String {
+    String::new()
+}
+
+fn node_closed_symbol() -> String {
+    String::from(" ⏷ ")
+}
+
+fn node_open_symbol() -> String {
+    String::from(" ▶ ")
+}
+
+fn node_no_children_symbol() -> String {
+    String::from(" ")
 }

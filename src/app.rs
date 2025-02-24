@@ -15,7 +15,7 @@ use tui_tree_widget::TreeState;
 
 use tokio::sync::broadcast::Receiver;
 
-use crate::wrappers::SniState;
+use crate::wrappers::{GetTitle, SniState};
 use crate::Config;
 
 pub type BoxStack = Vec<(i32, Rect)>;
@@ -89,6 +89,7 @@ impl App {
             v.set_focused(true);
             self.focused_sni = Some(0);
         }
+        // TODO sorting
     }
 
     /// Handles the tick event of the terminal.

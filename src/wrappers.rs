@@ -41,6 +41,26 @@ impl SniState {
     }
 }
 
+pub trait GetTitle {
+    fn get_title(&self) -> &String;
+}
+
+impl GetTitle for StatusNotifierItem {
+    fn get_title(&self) -> &String {
+        if let Some(title) = &self.title {
+            if !title.is_empty() {
+                return &title;
+            }
+        }
+
+        if let Some(tooltip) = &self.tool_tip {
+            return &tooltip.title;
+        }
+
+        &self.id
+    }
+}
+
 /// Wrapper around set of [StatusNotifierItem] and [TrayMenu]
 #[derive(Debug)]
 pub struct Item<'a> {
@@ -68,20 +88,6 @@ impl<'a> Item<'a> {
 
     pub fn set_rect(&mut self, rect: Rect) {
         self.rect = rect;
-    }
-
-    pub fn get_title(&self) -> &String {
-        if let Some(title) = &self.item.title {
-            if !title.is_empty() {
-                return &title;
-            }
-        }
-
-        if let Some(tooltip) = &self.item.tool_tip {
-            return &tooltip.title;
-        }
-
-        &self.item.id
     }
 
     pub fn get_colors(&self) -> (Color, Color) {
@@ -113,7 +119,7 @@ impl<'a> Item<'a> {
 
 impl Widget for Item<'_> {
     fn render(self, area: layout::Rect, buf: &mut Buffer) {
-        let title = self.get_title().clone();
+        let title = self.item.get_title().clone();
         let (bg, fg) = self.get_colors();
         let (bg_h, fg_h) = self.get_highlight_colors();
         let (border_bg, border_fg) = self.get_border_color();
