@@ -1,9 +1,7 @@
-use ::config;
 use ratatui::style::Color;
 use serde::Deserialize;
 use std::error::Error;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 fn get_default_config_path() -> Result<PathBuf, Box<dyn Error>> {
     match dirs::config_dir() {
@@ -88,10 +86,10 @@ pub struct Colors {
     pub border_focused: Color,
 
     #[serde(default = "green")]
-    bg_highlighted: Color,
+    pub bg_highlighted: Color,
 
     #[serde(default = "black")]
-    fg_highlighted: Color,
+    pub fg_highlighted: Color,
 }
 
 impl Default for Colors {
@@ -122,14 +120,6 @@ const fn black() -> Color {
 
 const fn white() -> Color {
     Color::White
-}
-
-const fn darkgray() -> Color {
-    Color::DarkGray
-}
-
-const fn blue() -> Color {
-    Color::Blue
 }
 
 const fn green() -> Color {

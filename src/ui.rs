@@ -15,7 +15,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     if let Some(items) = app.get_items() {
         let mut items_vec: Vec<Item> = Vec::new();
         app.sni_states.iter().for_each(|(k, v)| {
-            let item = Item::new(v, items.get(k).expect("not possible (I hope)"));
+            let item = Item::new(v, items.get(k).expect("not possible (I hope)"), &app.config);
             items_vec.push(item);
         });
 

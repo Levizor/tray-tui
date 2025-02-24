@@ -41,6 +41,7 @@ pub struct App {
     pub client: Client,
     /// states saved for each [StatusNotifierItem] and their [TrayMenu]
     pub sni_states: IndexMap<String, SniState>, // for the StatusNotifierItem
+    // index of currently focused sni item
     pub focused_sni: Option<usize>,
     /// items map from system-tray
     items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,

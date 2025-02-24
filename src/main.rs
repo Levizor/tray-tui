@@ -3,13 +3,13 @@ use std::{fs::File, io};
 use crate::{
     app::{App, AppResult},
     cli::Cli,
+    config::Config,
     event::{Event, EventHandler},
     handler::{handle_key_events, handle_mouse_event},
     tui::Tui,
 };
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
-use config::Config;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use simplelog::{CombinedLogger, Config as Conf, LevelFilter, WriteLogger};
 
