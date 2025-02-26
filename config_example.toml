@@ -1,4 +1,5 @@
 # Whether to sort tray items by their titles
+# Not yet implemented
 sorting = false
 
 # how menus are placed
