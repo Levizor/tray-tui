@@ -42,6 +42,39 @@ pub struct Symbols {
     pub node_no_children_symbol: String,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct Colors {
+    #[serde(default = "reset")]
+    pub bg: Color,
+
+    #[serde(default = "white")]
+    pub fg: Color,
+
+    #[serde(default = "white")]
+    pub border_fg: Color,
+
+    #[serde(default = "reset")]
+    pub border_bg: Color,
+
+    #[serde(default = "reset")]
+    pub bg_focused: Color,
+
+    #[serde(default = "white")]
+    pub fg_focused: Color,
+
+    #[serde(default = "green")]
+    pub border_fg_focused: Color,
+
+    #[serde(default = "reset")]
+    pub border_bg_focused: Color,
+
+    #[serde(default = "green")]
+    pub bg_highlighted: Color,
+
+    #[serde(default = "black")]
+    pub fg_highlighted: Color,
+}
+
 impl Default for Symbols {
     fn default() -> Self {
         Self {
@@ -97,39 +130,6 @@ pub enum Allignment {
 
 const fn allignment() -> Allignment {
     Allignment::Horizontal
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Colors {
-    #[serde(default = "reset")]
-    pub bg: Color,
-
-    #[serde(default = "white")]
-    pub fg: Color,
-
-    #[serde(default = "white")]
-    pub border_fg: Color,
-
-    #[serde(default = "reset")]
-    pub border_bg: Color,
-
-    #[serde(default = "reset")]
-    pub bg_focused: Color,
-
-    #[serde(default = "white")]
-    pub fg_focused: Color,
-
-    #[serde(default = "green")]
-    pub border_fg_focused: Color,
-
-    #[serde(default = "reset")]
-    pub border_bg_focused: Color,
-
-    #[serde(default = "green")]
-    pub bg_highlighted: Color,
-
-    #[serde(default = "black")]
-    pub fg_highlighted: Color,
 }
 
 impl Default for Colors {

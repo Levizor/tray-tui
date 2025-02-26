@@ -128,9 +128,9 @@ impl Widget for Item<'_> {
         if let Some(menu) = self.menu {
             let children = menuitems_to_treeitems(&menu.submenus);
 
-            let tree = Tree::new(&children).ok();
+            let tree = Tree::new(&children);
 
-            if let Some(mut tree) = tree {
+            if let Ok(mut tree) = tree {
                 tree = tree
                     .style(Style::default().bg(bg).fg(fg))
                     .highlight_style(Style::default().bg(bg_h).fg(fg_h))
