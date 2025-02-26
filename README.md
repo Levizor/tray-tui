@@ -29,6 +29,10 @@ Run `tray-tui` in the terminal or optionally pass a path to config file `tray-tu
 Configuration file is located at `$XDG_CONFIG_HOME/tray-tui/config.toml`.
 See all the configuration options in [example config](./config_example.toml).
 
+## Showcase
+
+![](images/1.png)
+
 ## **License**
 
 Project is licensed under [MIT](./LICENSE) license.
