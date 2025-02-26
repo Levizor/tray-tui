@@ -5,6 +5,7 @@ sorting = false
 # how menus are placed
 allignment = "horizontal" 
 
+# Colors used by the elements
 [colors]
 # background color for menu
 bg = "reset" 
@@ -36,8 +37,16 @@ border_bg = "reset"
 # backrgound color for focused border
 border_bg_focused = "reset"
 
+# Symbols used by tree widget
 [symbols]
+# symbol before currently selected item in menu
 highlight_symbol = ""
+
+# symbol used when item with submenus is opened
 node_open_symbol = " ▶ "
+
+# symbol used when item with submenus is closed
 node_closed_symbol = " ⏷ "
+
+# symbol before items with no submenus
 node_no_children_symbol = " "
