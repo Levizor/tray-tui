@@ -1379,7 +1379,7 @@ dependencies = [
 [[package]]
 name = "system-tray"
 version = "0.7.0"
-source = "git+https://github.com/Levizor/system-tray.git#51ff378eef24b0d76b19ddd4dc6bfe2fdce1b154"
+source = "git+https://github.com/Levizor/system-tray.git#310ede38de8bad37ab8a61c05e2056299b2caa44"
 dependencies = [
  "futures-lite",
  "serde",
