@@ -16,11 +16,13 @@ use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 use crate::config::Config;
 
+pub type Id = usize;
+
 #[derive(Debug)]
 pub struct SniState {
     pub rect: Rect,
     pub focused: bool,
-    pub tree_state: RefCell<TreeState<i32>>,
+    pub tree_state: RefCell<TreeState<Id>>,
 }
 
 impl SniState {
@@ -158,16 +160,16 @@ impl Widget for Item<'_> {
     }
 }
 
-fn menuitem_to_treeitem(menu_item: &MenuItem) -> Option<TreeItem<i32>> {
+fn menuitem_to_treeitem(id: usize, menu_item: &MenuItem) -> Option<TreeItem<Id>> {
     if menu_item.submenu.is_empty() {
         match &menu_item.label {
-            Some(label) => return Some(TreeItem::new_leaf(menu_item.id, label.clone())),
+            Some(label) => return Some(TreeItem::new_leaf(id, label.clone())),
             None => return None,
         }
     }
     let children = menuitems_to_treeitems(&menu_item.submenu);
     let root = TreeItem::new(
-        menu_item.id,
+        id,
         menu_item.label.clone().unwrap_or(String::from("no_label")),
         children,
     );
@@ -175,10 +177,31 @@ fn menuitem_to_treeitem(menu_item: &MenuItem) -> Option<TreeItem<i32>> {
     root.ok()
 }
 
-fn menuitems_to_treeitems(menu_items: &Vec<MenuItem>) -> Vec<TreeItem<i32>> {
+fn menuitems_to_treeitems(menu_items: &Vec<MenuItem>) -> Vec<TreeItem<Id>> {
     menu_items
         .iter()
-        .map(|menu_item| menuitem_to_treeitem(menu_item))
+        .enumerate()
+        .map(|(index, menu_item)| menuitem_to_treeitem(index, menu_item))
         .filter_map(|x| x)
         .collect()
+}
+
+pub trait FindMenuByUsize {
+    fn find_menu_by_usize(&self, ids: &[Id]) -> Option<&MenuItem>;
+}
+
+impl FindMenuByUsize for TrayMenu {
+    fn find_menu_by_usize(&self, ids: &[Id]) -> Option<&MenuItem> {
+        if ids.len() == 0 {
+            return None;
+        }
+        let mut result: &MenuItem = self.submenus.get(ids[0])?;
+        let mut submenus = &result.submenu;
+        for i in ids.iter().skip(1) {
+            result = submenus.get(*i)?;
+            submenus = &result.submenu;
+        }
+
+        Some(result)
+    }
 }

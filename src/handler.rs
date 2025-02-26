@@ -1,11 +1,6 @@
 use crate::app::{App, AppResult};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
-use system_tray::{
-    client::ActivateRequest,
-    menu::{MenuItem, TrayMenu},
-};
-use tui_tree_widget::TreeState;
 
 /// Handles the key events and updates the state of [`App`].
 pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
@@ -45,15 +40,8 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
             }
         }
         KeyCode::Enter => {
-            let id = tree_state.selected().get(0).cloned();
-            match id {
-                Some(id) => {
-                    let _ = activate_menu_item(id, app, &mut tree_state).await;
-                }
-                None => {
-                    let _ = tree_state.select_first();
-                }
-            }
+            let ids = tree_state.selected().to_vec();
+            let _ = app.activate_menu_item(&ids, &mut tree_state).await;
         }
         _ => {}
     }
@@ -65,76 +53,11 @@ fn get_pos(mouse_event: MouseEvent) -> Position {
     Position::new(mouse_event.column, mouse_event.row)
 }
 
-trait FindById {
-    fn find_by_id(&self, id: i32) -> Option<&MenuItem>;
-}
-
-fn recursive_find(item: &MenuItem, id: i32) -> Option<&MenuItem> {
-    if item.id == id {
-        return Some(&item);
-    }
-    for item in &item.submenu {
-        if let Some(item) = recursive_find(item, id) {
-            return Some(item);
-        }
-        log::info!("Iterating");
-    }
-
-    None
-}
-
-impl FindById for TrayMenu {
-    fn find_by_id(&self, id: i32) -> Option<&MenuItem> {
-        for item in &self.submenus {
-            if let Some(item) = recursive_find(item, id) {
-                return Some(item);
-            }
-        }
-
-        None
-    }
-}
-
-async fn activate_menu_item(id: i32, app: &App, tree_state: &mut TreeState<i32>) -> Option<()> {
-    let sni_key = app.get_focused_sni_key()?;
-    let map = app.get_items()?;
-    let (sni, menu) = map.get(sni_key)?;
-    let menu = match menu {
-        Some(menu) => menu,
-        None => return None,
-    };
-
-    let item = menu.find_by_id(id)?;
-
-    if item.submenu.is_empty() {
-        if let Some(path) = &sni.menu {
-            let activate_request = ActivateRequest::MenuItem {
-                address: sni_key.to_string(),
-                menu_path: path.to_string(),
-                submenu_id: id,
-            };
-            log::debug!("{:?}", activate_request);
-            let _ = app.client.activate(activate_request).await;
-
-            let _ = app
-                .client
-                .about_to_show_menuitem(sni_key.to_string(), path.to_string(), 0)
-                .await;
-        }
-    } else {
-        tree_state.toggle(vec![id]);
-    }
-
-    Some(())
-}
-
 async fn handle_click(mouse_event: MouseEvent, app: &App) -> Option<()> {
     let pos = get_pos(mouse_event);
     let mut tree_state = &mut app.get_focused_tree_state_mut()?;
-    let id = tree_state
-        .rendered_at(pos)
-        .map(|vec| *vec.last().unwrap())?;
-    activate_menu_item(id, app, &mut tree_state).await?;
+    let ids = tree_state.rendered_at(pos)?.to_vec();
+    app.activate_menu_item(&ids, &mut tree_state).await?;
     None
 }
 

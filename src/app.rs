@@ -6,6 +6,7 @@ use std::{
     error,
     sync::{Arc, Mutex, MutexGuard},
 };
+use system_tray::client::ActivateRequest;
 use system_tray::{
     client::{Client, Event},
     item::StatusNotifierItem,
@@ -15,7 +16,7 @@ use tui_tree_widget::TreeState;
 
 use tokio::sync::broadcast::Receiver;
 
-use crate::wrappers::SniState;
+use crate::wrappers::{FindMenuByUsize, Id, SniState};
 use crate::Config;
 
 pub type BoxStack = Vec<(i32, Rect)>;
@@ -131,12 +132,12 @@ impl App {
             .map(|(k, _)| k.to_string())
     }
 
-    pub fn get_focused_tree_state(&self) -> Option<Ref<TreeState<i32>>> {
+    pub fn get_focused_tree_state(&self) -> Option<Ref<TreeState<Id>>> {
         self.get_focused_sni_state()
             .map(|sni| sni.tree_state.borrow())
     }
 
-    pub fn get_focused_tree_state_mut(&self) -> Option<RefMut<TreeState<i32>>> {
+    pub fn get_focused_tree_state_mut(&self) -> Option<RefMut<TreeState<Id>>> {
         self.get_focused_sni_state()
             .map(|sni| sni.tree_state.borrow_mut())
     }
@@ -176,6 +177,43 @@ impl App {
         let (_, val) = self.sni_states.get_index_mut(new_index)?;
         val.focused = true;
         self.focused_sni = Some(new_index);
+
+        Some(())
+    }
+
+    pub async fn activate_menu_item(
+        &self,
+        ids: &[Id],
+        tree_state: &mut TreeState<Id>,
+    ) -> Option<()> {
+        let sni_key = self.get_focused_sni_key()?;
+        let map = self.get_items()?;
+        let (sni, menu) = map.get(sni_key)?;
+        let menu = match menu {
+            Some(menu) => menu,
+            None => return None,
+        };
+
+        let item = menu.find_menu_by_usize(ids)?;
+
+        if item.submenu.is_empty() {
+            if let Some(path) = &sni.menu {
+                let activate_request = ActivateRequest::MenuItem {
+                    address: sni_key.to_string(),
+                    menu_path: path.to_string(),
+                    submenu_id: item.id,
+                };
+                log::debug!("{:?}", activate_request);
+                let _ = self.client.activate(activate_request).await;
+
+                let _ = self
+                    .client
+                    .about_to_show_menuitem(sni_key.to_string(), path.to_string(), 0)
+                    .await;
+            }
+        } else {
+            tree_state.toggle(ids.to_vec());
+        }
 
         Some(())
     }
