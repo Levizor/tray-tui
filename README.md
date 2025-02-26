@@ -14,6 +14,26 @@ tray-tui brings system tray functionality to the terminal, displaying **tray men
 
 ## **Installation**
 
+### Arch linux
+
+Available in AUR
+
+```
+yay -S tray-tui
+```
+
+### NixOS or Nix package manager
+
+Soon to be added in nixpkgs-unstable
+
+```
+  environment.systemPackages = with pkgs; [
+    tray-tui
+  ];
+```
+
+### Other
+
 With cargo:
 
 ```
