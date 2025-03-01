@@ -1,4 +1,4 @@
-use crate::app::{App, AppResult};
+use crate::app::{App, AppResult, FocusDirection};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
 
@@ -16,10 +16,16 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
             }
         }
         KeyCode::Left | KeyCode::Char('h') => {
-            app.move_focus_to_left();
+            app.move_focus(FocusDirection::Left);
         }
         KeyCode::Right | KeyCode::Char('l') => {
-            app.move_focus_to_right();
+            app.move_focus(FocusDirection::Right);
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            app.move_focus(FocusDirection::Down);
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            app.move_focus(FocusDirection::Up);
         }
         _ => {}
     }
@@ -29,19 +35,19 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
     }
     let mut tree_state = &mut tree_state.unwrap();
     match key_event.code {
-        KeyCode::Up | KeyCode::Char('k') => {
-            if !tree_state.key_up() {
-                tree_state.select_last();
-            }
+        KeyCode::Enter => {
+            let ids = tree_state.selected().to_vec();
+            let _ = app.activate_menu_item(&ids, &mut tree_state).await;
         }
-        KeyCode::Down | KeyCode::Char('j') => {
+        KeyCode::Tab => {
             if !tree_state.key_down() {
                 tree_state.select_first();
             }
         }
-        KeyCode::Enter => {
-            let ids = tree_state.selected().to_vec();
-            let _ = app.activate_menu_item(&ids, &mut tree_state).await;
+        KeyCode::BackTab => {
+            if !tree_state.key_up() {
+                tree_state.select_last();
+            }
         }
         _ => {}
     }

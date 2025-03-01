@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use ratatui::layout::{Position, Rect};
+use ratatui::layout::{Direction, Position, Rect};
 use std::{
     cell::{Ref, RefMut},
     collections::{HashMap, HashSet},
@@ -16,8 +16,11 @@ use tui_tree_widget::TreeState;
 
 use tokio::sync::broadcast::Receiver;
 
-use crate::wrappers::{FindMenuByUsize, Id, SniState};
 use crate::Config;
+use crate::{
+    config::Allignment,
+    wrappers::{FindMenuByUsize, Id, SniState},
+};
 
 pub type BoxStack = Vec<(i32, Rect)>;
 
@@ -142,36 +145,51 @@ impl App {
             .map(|sni| sni.tree_state.borrow_mut())
     }
 
-    pub fn move_focus_to_right(&mut self) -> Option<()> {
+    pub fn move_focus(&mut self, direction: FocusDirection) -> Option<()> {
         let len = self.sni_states.len();
         if len <= 1 {
             return Some(());
         }
-
         let index = self.get_focused_sni_index()?.clone();
         self.sni_states.get_index_mut(index)?.1.focused = false;
+        let columns = self.config.columns;
 
-        let new_index = (index + 1) % len;
-
-        let (_, val) = self.sni_states.get_index_mut(new_index)?;
-        val.focused = true;
-        self.focused_sni = Some(new_index);
-
-        Some(())
-    }
-
-    pub fn move_focus_to_left(&mut self) -> Option<()> {
-        let len = self.sni_states.len();
-        if len <= 1 {
-            return Some(());
-        }
-
-        let index = self.get_focused_sni_index()?.clone();
-        self.sni_states.get_index_mut(index)?.1.focused = false;
-
-        let new_index = match index {
-            0 => len - 1,
-            _ => index - 1,
+        let new_index = match direction {
+            FocusDirection::Down => {
+                let a = index + columns;
+                if a >= len {
+                    a % len
+                } else {
+                    a
+                }
+            }
+            FocusDirection::Up => {
+                if (index as i32 - columns as i32) >= 0 {
+                    index - columns
+                } else {
+                    let mut i = index;
+                    while i + columns < len {
+                        i += columns;
+                    }
+                    i
+                }
+            }
+            FocusDirection::Right => {
+                let a = index + 1;
+                if a < len {
+                    a
+                } else {
+                    0
+                }
+            }
+            FocusDirection::Left => {
+                let a = index as i32 - 1;
+                if a < 0 {
+                    len - 1
+                } else {
+                    a as usize
+                }
+            }
         };
 
         let (_, val) = self.sni_states.get_index_mut(new_index)?;
@@ -217,4 +235,10 @@ impl App {
 
         Some(())
     }
+}
+pub enum FocusDirection {
+    Down,
+    Up,
+    Right,
+    Left,
 }

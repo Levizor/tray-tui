@@ -1,17 +1,16 @@
-use std::rc::Rc;
+use std::iter::repeat_n;
 
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     Frame,
 };
-use std::iter;
 
 use crate::app::App;
 use crate::wrappers::Item;
 
 /// Renders the user interface widgets.
 pub fn render(app: &mut App, frame: &mut Frame) {
-    let mut rectangles: Rc<[Rect]> = Rc::default();
+    let mut rectangles: Vec<Rect> = Vec::default();
     if let Some(items) = app.get_items() {
         let mut items_vec: Vec<Item> = Vec::new();
         app.sni_states.iter().for_each(|(k, v)| {
@@ -19,16 +18,30 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             items_vec.push(item);
         });
 
-        rectangles = match app.config.allignment {
-            crate::config::Allignment::Horizontal => {
-                Layout::horizontal(iter::repeat(Constraint::Fill(1)).take(items_vec.len()))
-                    .split(frame.area())
+        rectangles = {
+            let size = items_vec.len();
+            let columns: usize = app.config.columns;
+            let rows: usize = (size + columns - 1) / columns;
+
+            let mut result = Vec::new();
+
+            let row_layout =
+                Layout::vertical(repeat_n(Constraint::Fill(1), rows)).split(frame.area());
+
+            for r in 0..rows {
+                let start = r * columns;
+                let end = (start + columns).min(size);
+                let items_n = end - start;
+
+                let col_layout =
+                    Layout::horizontal(repeat_n(Constraint::Fill(1), items_n)).split(row_layout[r]);
+
+                result.extend_from_slice(&col_layout[..items_n]);
             }
-            crate::config::Allignment::Vertical => {
-                Layout::vertical(iter::repeat(Constraint::Fill(1)).take(items_vec.len()))
-                    .split(frame.area())
-            }
+
+            result
         };
+
         render_items(frame, items_vec, rectangles.iter());
     }
 

@@ -24,6 +24,8 @@ pub mod tui;
 pub mod ui;
 pub mod wrappers;
 
+static CMD: &str = "tray-tui";
+
 #[tokio::main]
 async fn main() -> AppResult<()> {
     let cli = Cli::parse();
@@ -31,7 +33,7 @@ async fn main() -> AppResult<()> {
     if let Some(shell) = cli.completions {
         let mut cmd = Cli::command();
         let mut out = io::stdout();
-        generate(shell, &mut cmd, "tray-tui", &mut out);
+        generate(shell, &mut cmd, CMD, &mut out);
         return Ok(());
     }
 
@@ -63,12 +65,13 @@ async fn main() -> AppResult<()> {
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new();
+    let events = EventHandler::new(app.config.mouse);
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
     log::info!("Initialized TUI");
 
     tui.draw(&mut app)?;
+
     while app.running {
         tui.draw(&mut app)?;
         tokio::select! {
@@ -80,12 +83,11 @@ async fn main() -> AppResult<()> {
                 match event {
                     Event::Key(key_event) => handle_key_events(key_event, &mut app).await?,
                     Event::Mouse(mouse_event) => {
-
                         handle_mouse_event(mouse_event, &mut app).await?
                     },
                     Event::Resize(_, _) => {tui.draw(&mut app).unwrap()}
                     Event::FocusLost => {
-                        log::info!("FocusLost");
+                        // doensn't work for some reason
                         app.focused_sni=None;
                     }
                 }

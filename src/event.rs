@@ -30,7 +30,7 @@ pub struct EventHandler {
 
 impl EventHandler {
     /// Constructs a new instance of [`EventHandler`].
-    pub fn new() -> Self {
+    pub fn new(use_mouse: bool) -> Self {
         let (sender, receiver) = mpsc::unbounded_channel();
         let _sender = sender.clone();
         let handler = tokio::spawn(async move {
@@ -49,7 +49,9 @@ impl EventHandler {
                         }
                       },
                       CrosstermEvent::Mouse(mouse) => {
-                        _sender.send(Event::Mouse(mouse)).unwrap();
+                        if use_mouse {
+                            _sender.send(Event::Mouse(mouse)).unwrap();
+                        }
                       },
                       CrosstermEvent::Resize(x, y) => {
                         _sender.send(Event::Resize(x, y)).unwrap();

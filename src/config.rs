@@ -1,21 +1,16 @@
+use crate::CMD;
 use ratatui::style::Color;
 use serde::Deserialize;
 use std::error::Error;
 use std::path::PathBuf;
 
-fn get_default_config_path() -> Result<PathBuf, Box<dyn Error>> {
-    match dirs::config_dir() {
-        Some(conf_dir) => Ok(conf_dir.join("tray-tui/config.toml")),
-        None => Err(Box::<dyn Error>::from(
-            "Couldn't determine default config directory.",
-        )),
-    }
-}
-
 #[derive(Deserialize, Debug)]
 pub struct Config {
     #[serde(default = "allignment")]
     pub allignment: Allignment,
+
+    #[serde(default = "columns")]
+    pub columns: usize,
 
     #[serde(default = "sorting")]
     pub sorting: bool,
@@ -25,6 +20,9 @@ pub struct Config {
 
     #[serde(default = "symbols")]
     pub symbols: Symbols,
+
+    #[serde(default = "mouse")]
+    pub mouse: bool,
 }
 
 #[derive(Deserialize, Debug)]
@@ -75,6 +73,13 @@ pub struct Colors {
     pub fg_highlighted: Color,
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum Allignment {
+    Horizontal,
+    Vertical,
+}
+
 impl Default for Symbols {
     fn default() -> Self {
         Self {
@@ -93,6 +98,8 @@ impl Default for Config {
             symbols: symbols(),
             allignment: allignment(),
             colors: colors(),
+            columns: columns(),
+            mouse: mouse(),
         }
     }
 }
@@ -104,32 +111,26 @@ impl Config {
             Some(path) => builder
                 .add_source(config::File::from(path.clone()).format(config::FileFormat::Toml)),
             None => {
-                let path = get_default_config_path()?;
+                let path = Self::get_default_config_path()?;
                 if !path.exists() {
                     log::info!("Config file not found. Using default configuration.");
                     return Ok(Self::default());
                 }
-                builder.add_source(
-                    config::File::from(get_default_config_path().expect("Infallible"))
-                        .format(config::FileFormat::Toml),
-                )
+                builder.add_source(config::File::from(path).format(config::FileFormat::Toml))
             }
         };
 
         let config = builder.build()?.try_deserialize::<Config>()?;
         Ok(config)
     }
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "lowercase")]
-pub enum Allignment {
-    Horizontal,
-    Vertical,
-}
-
-const fn allignment() -> Allignment {
-    Allignment::Horizontal
+    fn get_default_config_path() -> Result<PathBuf, Box<dyn Error>> {
+        match dirs::config_dir() {
+            Some(conf_dir) => Ok(conf_dir.join(format!("{CMD}/config.toml"))),
+            None => Err(Box::<dyn Error>::from(
+                "Couldn't determine default config directory.",
+            )),
+        }
+    }
 }
 
 impl Default for Colors {
@@ -190,4 +191,16 @@ fn node_open_symbol() -> String {
 
 fn node_no_children_symbol() -> String {
     String::from(" ")
+}
+
+const fn columns() -> usize {
+    3
+}
+
+const fn mouse() -> bool {
+    true
+}
+
+const fn allignment() -> Allignment {
+    Allignment::Horizontal
 }
