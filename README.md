@@ -1,5 +1,8 @@
 # tray-tui
 
+[![nixpkgs unstable package](https://repology.org/badge/version-for-repo/nix_unstable/tray-tui.svg)](https://search.nixos.org/packages?channel=unstable&query=tray-tui)
+[![AUR package](https://repology.org/badge/version-for-repo/aur/tray-tui.svg)](https://aur.archlinux.org/packages/tray-tui)
+
 A **system tray implementation** for **terminal user interfaces (TUI)** using [ratatui](https://github.com/ratatui) and [system-tray](https://github.com/jakestanger/system-tray).
 
 ## **Overview**
