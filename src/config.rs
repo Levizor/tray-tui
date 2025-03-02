@@ -236,8 +236,10 @@ fn key_map() -> HashMap<KeyCombination, KeyBindEvent> {
     map.insert(key!(l), KeyBindEvent::FocusRight);
     map.insert(key!(j), KeyBindEvent::FocusDown);
     map.insert(key!(k), KeyBindEvent::FocusUp);
-    map.insert(key!(s - tab), KeyBindEvent::MenuUp);
-    map.insert(key!(tab), KeyBindEvent::MenuDown);
+    map.insert(key!(shift - up), KeyBindEvent::MenuUp);
+    map.insert(key!(shift - down), KeyBindEvent::MenuDown);
+    map.insert(key!(shift - k), KeyBindEvent::MenuUp);
+    map.insert(key!(shift - j), KeyBindEvent::MenuDown);
     map.insert(key!(ctrl - c), KeyBindEvent::Quit);
     map.insert(key!(q), KeyBindEvent::Quit);
     map.insert(key!(enter), KeyBindEvent::Activate);
