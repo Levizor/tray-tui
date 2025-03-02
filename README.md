@@ -44,6 +44,16 @@ cargo install tray-tui
 
 Run `tray-tui` in the terminal or optionally pass a path to config file `tray-tui -c $CONFIG`.
 
+Use `hjkl` or `arrow keys` to navigate between menus.
+
+Use `Shift-(J/K|Up/Down)` move focus between items inside menu.
+
+`Enter` to activate.
+
+`q/Ctrl-c` to exit.
+
+You can configure the bindings.
+
 ## **Configuration**
 
 Configuration file is located at `$XDG_CONFIG_HOME/tray-tui/config.toml`.
