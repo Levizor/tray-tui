@@ -2,7 +2,7 @@ use crate::{
     app::{App, AppResult, FocusDirection},
     config::KeyBindEvent,
 };
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
 
 /// Handles the key events and updates the state of [`App`].

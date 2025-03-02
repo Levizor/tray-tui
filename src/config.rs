@@ -1,7 +1,7 @@
 use crate::CMD;
-use crokey::{key, parse, KeyCombination};
+use crokey::{key, KeyCombination};
 use ratatui::style::Color;
-use serde::{de, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::PathBuf;

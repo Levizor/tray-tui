@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use ratatui::layout::{Direction, Position, Rect};
+use ratatui::layout::{Position, Rect};
 use std::{
     cell::{Ref, RefMut},
     collections::{HashMap, HashSet},
@@ -17,10 +17,7 @@ use tui_tree_widget::TreeState;
 use tokio::sync::broadcast::Receiver;
 
 use crate::Config;
-use crate::{
-    config::Allignment,
-    wrappers::{FindMenuByUsize, Id, SniState},
-};
+use crate::wrappers::{FindMenuByUsize, Id, SniState};
 
 pub type BoxStack = Vec<(i32, Rect)>;
 

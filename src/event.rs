@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crokey::{key, parse, KeyCombination};
-use crossterm::event::{Event as CrosstermEvent, KeyEvent, MouseEvent};
+use crokey::KeyCombination;
+use crossterm::event::{Event as CrosstermEvent, MouseEvent};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
 
