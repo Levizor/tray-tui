@@ -1,8 +1,24 @@
 use crate::CMD;
+use crokey::{key, parse, KeyCombination};
 use ratatui::style::Color;
-use serde::Deserialize;
+use serde::{de, Deserialize, Deserializer};
+use std::collections::HashMap;
 use std::error::Error;
 use std::path::PathBuf;
+
+#[derive(Debug, Deserialize, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub enum KeyBindEvent {
+    FocusLeft,
+    FocusDown,
+    FocusUp,
+    FocusRight,
+    TreeUp,
+    TreeDown,
+    Quit,
+    Activate,
+    None,
+}
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -23,6 +39,25 @@ pub struct Config {
 
     #[serde(default = "mouse")]
     pub mouse: bool,
+
+    #[serde(default = "key_map", deserialize_with = "merge_with_default")]
+    pub key_map: HashMap<KeyCombination, KeyBindEvent>,
+}
+
+fn merge_with_default<'de, D>(
+    deserializer: D,
+) -> Result<HashMap<KeyCombination, KeyBindEvent>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let mut default_map = key_map();
+    let config_map: Option<HashMap<KeyCombination, KeyBindEvent>> =
+        Option::deserialize(deserializer)?;
+    if let Some(map) = config_map {
+        default_map.extend(map);
+    }
+
+    Ok(default_map)
 }
 
 #[derive(Deserialize, Debug)]
@@ -100,6 +135,7 @@ impl Default for Config {
             colors: colors(),
             columns: columns(),
             mouse: mouse(),
+            key_map: key_map(),
         }
     }
 }
@@ -203,4 +239,19 @@ const fn mouse() -> bool {
 
 const fn allignment() -> Allignment {
     Allignment::Horizontal
+}
+
+fn key_map() -> HashMap<KeyCombination, KeyBindEvent> {
+    let mut map = HashMap::new();
+    map.insert(key!(left), KeyBindEvent::FocusLeft);
+    map.insert(key!(right), KeyBindEvent::FocusRight);
+    map.insert(key!(down), KeyBindEvent::FocusDown);
+    map.insert(key!(up), KeyBindEvent::FocusUp);
+    map.insert(key!(s - tab), KeyBindEvent::TreeUp);
+    map.insert(key!(tab), KeyBindEvent::TreeDown);
+    map.insert(key!(ctrl - c), KeyBindEvent::Quit);
+    map.insert(key!(q), KeyBindEvent::Quit);
+    map.insert(key!(enter), KeyBindEvent::Activate);
+
+    map
 }

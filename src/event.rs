@@ -1,18 +1,23 @@
+use std::collections::HashMap;
+
+use crokey::{key, parse, KeyCombination};
 use crossterm::event::{Event as CrosstermEvent, KeyEvent, MouseEvent};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
 
 use crate::app::AppResult;
+use crate::config::KeyBindEvent;
 
 /// Terminal events.
 #[derive(Clone, Copy, Debug)]
 pub enum Event {
     /// Key press.
-    Key(KeyEvent),
+    Key(KeyBindEvent),
     /// Mouse click/scroll.
     Mouse(MouseEvent),
     /// Terminal resize.
     Resize(u16, u16),
+    /// Loosing focus, doesnt' happen however :(    
     FocusLost,
 }
 
@@ -30,7 +35,7 @@ pub struct EventHandler {
 
 impl EventHandler {
     /// Constructs a new instance of [`EventHandler`].
-    pub fn new(use_mouse: bool) -> Self {
+    pub fn new(use_mouse: bool, keymap: HashMap<KeyCombination, KeyBindEvent>) -> Self {
         let (sender, receiver) = mpsc::unbounded_channel();
         let _sender = sender.clone();
         let handler = tokio::spawn(async move {
@@ -45,7 +50,10 @@ impl EventHandler {
                     match evt {
                       CrosstermEvent::Key(key) => {
                         if key.kind == crossterm::event::KeyEventKind::Press {
-                          _sender.send(Event::Key(key)).unwrap();
+                          let key_bind = KeyCombination::from(key);
+                          if let Some(event) = keymap.get(&key_bind) {
+                            _sender.send(Event::Key(*event)).unwrap();
+                          }
                         }
                       },
                       CrosstermEvent::Mouse(mouse) => {

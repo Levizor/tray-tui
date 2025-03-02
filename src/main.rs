@@ -61,11 +61,12 @@ async fn main() -> AppResult<()> {
 
     // Create an application.
     let mut app = App::new(client, config);
+    let map = app.config.key_map.clone();
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new(app.config.mouse);
+    let events = EventHandler::new(app.config.mouse, map);
     let mut tui = Tui::new(terminal, events);
     tui.init()?;
     log::info!("Initialized TUI");

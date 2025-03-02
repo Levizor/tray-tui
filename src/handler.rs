@@ -1,30 +1,27 @@
-use crate::app::{App, AppResult, FocusDirection};
+use crate::{
+    app::{App, AppResult, FocusDirection},
+    config::KeyBindEvent,
+};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Position;
 
 /// Handles the key events and updates the state of [`App`].
-pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
-    match key_event.code {
+pub async fn handle_key_events(key_bind_event: KeyBindEvent, app: &mut App) -> AppResult<()> {
+    match key_bind_event {
         // Exit application on `ESC` or `q`
-        KeyCode::Esc | KeyCode::Char('q') => {
+        KeyBindEvent::Quit => {
             app.quit();
         }
-        // Exit application on `Ctrl-C`
-        KeyCode::Char('c') | KeyCode::Char('C') => {
-            if key_event.modifiers == KeyModifiers::CONTROL {
-                app.quit();
-            }
-        }
-        KeyCode::Left | KeyCode::Char('h') => {
+        KeyBindEvent::FocusLeft => {
             app.move_focus(FocusDirection::Left);
         }
-        KeyCode::Right | KeyCode::Char('l') => {
+        KeyBindEvent::FocusRight => {
             app.move_focus(FocusDirection::Right);
         }
-        KeyCode::Down | KeyCode::Char('j') => {
+        KeyBindEvent::FocusDown => {
             app.move_focus(FocusDirection::Down);
         }
-        KeyCode::Up | KeyCode::Char('k') => {
+        KeyBindEvent::FocusUp => {
             app.move_focus(FocusDirection::Up);
         }
         _ => {}
@@ -34,17 +31,17 @@ pub async fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<
         return Ok(());
     }
     let mut tree_state = &mut tree_state.unwrap();
-    match key_event.code {
-        KeyCode::Enter => {
+    match key_bind_event {
+        KeyBindEvent::Activate => {
             let ids = tree_state.selected().to_vec();
             let _ = app.activate_menu_item(&ids, &mut tree_state).await;
         }
-        KeyCode::Tab => {
+        KeyBindEvent::TreeDown => {
             if !tree_state.key_down() {
                 tree_state.select_first();
             }
         }
-        KeyCode::BackTab => {
+        KeyBindEvent::TreeUp => {
             if !tree_state.key_up() {
                 tree_state.select_last();
             }
