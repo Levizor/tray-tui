@@ -2,8 +2,33 @@
 # Not yet implemented
 sorting = false
 
-# how menus are placed
-allignment = "horizontal" 
+# max amount of columns in layout
+columns = 3
+
+[key_map]
+# move item focus
+left = "focus_left"
+h = "focus_left"
+
+right = "focus_right"
+l = "focus_right"
+
+up = "focus_up"
+j = "focus_up"
+
+down = "focus_down"
+k = "focus_down"
+
+# move focus inside menu tree
+shift-down = "menu_down"
+shift-up = "menu_up"
+
+q = "quit"
+ctrl-c = "quit"
+esc = "quit"
+
+# activate the focused item inside menu tree
+enter = "activate"
 
 # Colors used by the elements
 [colors]

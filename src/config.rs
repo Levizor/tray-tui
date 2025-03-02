@@ -13,8 +13,8 @@ pub enum KeyBindEvent {
     FocusDown,
     FocusUp,
     FocusRight,
-    TreeUp,
-    TreeDown,
+    MenuUp,
+    MenuDown,
     Quit,
     Activate,
     None,
@@ -22,9 +22,6 @@ pub enum KeyBindEvent {
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    #[serde(default = "allignment")]
-    pub allignment: Allignment,
-
     #[serde(default = "columns")]
     pub columns: usize,
 
@@ -108,13 +105,6 @@ pub struct Colors {
     pub fg_highlighted: Color,
 }
 
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "lowercase")]
-pub enum Allignment {
-    Horizontal,
-    Vertical,
-}
-
 impl Default for Symbols {
     fn default() -> Self {
         Self {
@@ -131,7 +121,6 @@ impl Default for Config {
         Self {
             sorting: sorting(),
             symbols: symbols(),
-            allignment: allignment(),
             colors: colors(),
             columns: columns(),
             mouse: mouse(),
@@ -237,18 +226,18 @@ const fn mouse() -> bool {
     true
 }
 
-const fn allignment() -> Allignment {
-    Allignment::Horizontal
-}
-
 fn key_map() -> HashMap<KeyCombination, KeyBindEvent> {
     let mut map = HashMap::new();
     map.insert(key!(left), KeyBindEvent::FocusLeft);
     map.insert(key!(right), KeyBindEvent::FocusRight);
     map.insert(key!(down), KeyBindEvent::FocusDown);
     map.insert(key!(up), KeyBindEvent::FocusUp);
-    map.insert(key!(s - tab), KeyBindEvent::TreeUp);
-    map.insert(key!(tab), KeyBindEvent::TreeDown);
+    map.insert(key!(h), KeyBindEvent::FocusLeft);
+    map.insert(key!(l), KeyBindEvent::FocusRight);
+    map.insert(key!(j), KeyBindEvent::FocusDown);
+    map.insert(key!(k), KeyBindEvent::FocusUp);
+    map.insert(key!(s - tab), KeyBindEvent::MenuUp);
+    map.insert(key!(tab), KeyBindEvent::MenuDown);
     map.insert(key!(ctrl - c), KeyBindEvent::Quit);
     map.insert(key!(q), KeyBindEvent::Quit);
     map.insert(key!(enter), KeyBindEvent::Activate);

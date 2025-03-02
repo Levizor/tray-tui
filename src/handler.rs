@@ -36,12 +36,12 @@ pub async fn handle_key_events(key_bind_event: KeyBindEvent, app: &mut App) -> A
             let ids = tree_state.selected().to_vec();
             let _ = app.activate_menu_item(&ids, &mut tree_state).await;
         }
-        KeyBindEvent::TreeDown => {
+        KeyBindEvent::MenuDown => {
             if !tree_state.key_down() {
                 tree_state.select_first();
             }
         }
-        KeyBindEvent::TreeUp => {
+        KeyBindEvent::MenuUp => {
             if !tree_state.key_up() {
                 tree_state.select_last();
             }
