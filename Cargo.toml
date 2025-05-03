@@ -5,7 +5,7 @@ repository = "https://github.com/Levizor/tray-tui"
 homepage =  "https://github.com/Levizor/tray-tui"
 
 version = "0.2.0"
-authors = ["Levizor <levizorri@gmail.com>"]
+authors = ["Levizor <levizorri@gmail.com>", "EliasDevis <elias.devis@protonmail.com>"]
 license = "MIT"
 edition = "2021"
 
