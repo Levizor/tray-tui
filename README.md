@@ -25,6 +25,10 @@ Available in AUR
 yay -S tray-tui
 ```
 
+```
+paru tray-tui
+```
+
 ### NixOS or Nix package manager
 
 Soon to be added in nixpkgs-unstable
