@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crokey::KeyCombination;
-use crossterm::event::{Event as CrosstermEvent, MouseEvent};
+use crossterm::event::{Event as CrosstermEvent, MouseEvent, KeyEventKind};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
 
@@ -49,7 +49,7 @@ impl EventHandler {
                   Some(Ok(evt)) = crossterm_event => {
                     match evt {
                       CrosstermEvent::Key(key) => {
-                        if key.kind == crossterm::event::KeyEventKind::Press {
+                        if key.kind == KeyEventKind::Press {
                           let key_bind = KeyCombination::from(key);
                           if let Some(event) = keymap.get(&key_bind) {
                             _sender.send(Event::Key(*event)).unwrap();
