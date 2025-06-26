@@ -47,6 +47,12 @@ With cargo:
 cargo install tray-tui
 ```
 
+In case of failure, try to run
+
+```
+cargo install --locked tray-tui
+```
+
 ## **Usage**
 
 Run `tray-tui` in the terminal or optionally pass a path to config file `tray-tui -c $CONFIG`.
