@@ -4,7 +4,7 @@ description = "System tray in your terminal"
 repository = "https://github.com/Levizor/tray-tui"
 homepage =  "https://github.com/Levizor/tray-tui"
 
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Levizor <levizorri@gmail.com>", "EliasDevis <elias.devis@protonmail.com>"]
 license = "MIT"
 edition = "2021"
@@ -13,8 +13,8 @@ edition = "2021"
 clap = { version = "4.5.28", features = ["derive"] }
 clap_complete = "4.5.44"
 config = "0.15.8"
-crokey = "1.1.0"
-crossterm = { version = "0.28.1", features = ["event-stream"] }
+crokey = "1.2.0"
+crossterm = { version = "0.29", features = ["event-stream"] }
 dirs = "6.0.0"
 futures = "0.3.31"
 indexmap = "2.7.1"
@@ -22,6 +22,6 @@ log = "0.4.25"
 ratatui = { version = "0.29.0", features = ["unstable-widget-ref", "serde"] }
 serde = { version = "1.0.217", features = ["serde_derive", "derive"] }
 simplelog = "0.12.2"
-system-tray = {version = "0.7.0", git = "https://github.com/Levizor/system-tray.git" }
+system-tray = {version = "0.8.0"}
 tokio = { version = "1.40.0", features = ["full"] }
 tui-tree-widget = "0.23.0"
