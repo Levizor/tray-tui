@@ -16,8 +16,8 @@ use tui_tree_widget::TreeState;
 
 use tokio::sync::broadcast::Receiver;
 
-use crate::Config;
 use crate::wrappers::{FindMenuByUsize, Id, SniState};
+use crate::Config;
 
 pub type BoxStack = Vec<(i32, Rect)>;
 
@@ -37,7 +37,7 @@ pub struct App {
     // index of currently focused sni item
     pub focused_sni: Option<usize>,
     /// items map from system-tray
-    items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
+    pub items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
     pub tray_rx: Mutex<Receiver<Event>>,
 }
 
@@ -56,8 +56,7 @@ impl App {
     }
 
     /// Updating states
-    pub fn update(&mut self, update: Event) {
-        log::info!("UPDATE: {:?}", update);
+    pub fn update(&mut self) {
         //log::debug!("ITEMS NOW: {:?}", self.get_items().unwrap());
         let mut buffer: HashSet<String> = HashSet::default();
         if let Some(items) = self.get_items() {
