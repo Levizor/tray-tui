@@ -77,7 +77,17 @@ async fn main() -> AppResult<()> {
         tui.draw(&mut app)?;
         tokio::select! {
             Ok(update) = tray_rx.recv() => {
-                app.update(update);
+                log::info!("UPDATE: {:?}", update);
+                if let system_tray::client::Event::Update(dest, system_tray::client::UpdateEvent::Menu(_)) = update {
+                    // the TrayMenu exist means that the menu path must exist, i think.
+                    let menu_path = app.items.lock().unwrap().get(&dest).unwrap().0.menu.clone().unwrap();
+                    let _ = app.client.about_to_show_menuitem(
+                        dest,
+                        menu_path,
+                        0,
+                    ).await.unwrap();
+                }
+                app.update();
             }
 
             Ok(event) = tui.events.next() => {
