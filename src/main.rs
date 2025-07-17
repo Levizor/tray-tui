@@ -85,7 +85,7 @@ async fn main() -> AppResult<()> {
                         dest,
                         menu_path,
                         0,
-                    ).await.unwrap();
+                    ).await;
                 }
                 app.update();
             }
