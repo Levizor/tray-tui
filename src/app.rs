@@ -152,42 +152,28 @@ impl App {
 
         let new_index = match direction {
             FocusDirection::Down => {
-                let a = index + columns;
-                if a >= len {
-                    a % len
+                if index == len - 1 {
+                    0
                 } else {
-                    a
+                    (index + columns).min(len - 1)
                 }
             }
-            FocusDirection::Up => {
-                if (index as i32 - columns as i32) >= 0 {
-                    index - columns
-                } else {
-                    let mut i = index;
-                    while i + columns < len {
-                        i += columns;
-                    }
-                    i
+            FocusDirection::Up => index.checked_sub(columns).unwrap_or_else(|| {
+                let mut i = index;
+                while i + columns < len {
+                    i += columns;
                 }
-            }
+                i
+            }),
             FocusDirection::Right => {
-                let a = index + 1;
-                if a < len {
-                    a
+                if index + 1 < len {
+                    index + 1
                 } else {
                     0
                 }
             }
-            FocusDirection::Left => {
-                let a = index as i32 - 1;
-                if a < 0 {
-                    len - 1
-                } else {
-                    a as usize
-                }
-            }
+            FocusDirection::Left => index.checked_sub(1).unwrap_or(len - 1),
         };
-
         let (_, val) = self.sni_states.get_index_mut(new_index)?;
         val.focused = true;
         self.focused_sni = Some(new_index);
