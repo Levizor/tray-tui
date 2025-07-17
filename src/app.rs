@@ -62,9 +62,6 @@ impl App {
         if let Some(items) = self.get_items() {
             buffer = items.keys().cloned().collect();
         }
-        if buffer.len() == self.sni_states.len() {
-            return;
-        }
         for key in &buffer {
             self.sni_states
                 .entry(key.to_string())
