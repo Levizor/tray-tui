@@ -2,7 +2,7 @@ use indexmap::IndexMap;
 use ratatui::layout::{Position, Rect};
 use std::{
     cell::{Ref, RefMut},
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     error,
     sync::{Arc, Mutex, MutexGuard},
 };
@@ -16,7 +16,7 @@ use tui_tree_widget::TreeState;
 
 use tokio::sync::broadcast::Receiver;
 
-use crate::wrappers::{FindMenuByUsize, Id, SniState};
+use crate::wrappers::{FindMenuByUsize, GetTitle, Id, SniState};
 use crate::Config;
 
 pub type BoxStack = Vec<(i32, Rect)>;
@@ -34,8 +34,9 @@ pub struct App {
     pub client: Client,
     /// states saved for each [StatusNotifierItem] and their [TrayMenu]
     pub sni_states: IndexMap<String, SniState>, // for the StatusNotifierItem
-    // index of currently focused sni item
-    pub focused_sni: Option<usize>,
+    //  currently focused sni item info
+    pub focused_sni_index: usize,
+    pub focused_sni_key: String,
     /// items map from system-tray
     pub items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
     pub tray_rx: Mutex<Receiver<Event>>,
@@ -51,34 +52,50 @@ impl App {
             items: client.items(),
             sni_states: IndexMap::default(),
             client,
-            focused_sni: None,
+            focused_sni_index: 0,
+            focused_sni_key: String::default(),
         }
     }
 
     /// Updating states
     pub fn update(&mut self) {
-        //log::debug!("ITEMS NOW: {:?}", self.get_items().unwrap());
-        let mut buffer: HashSet<String> = HashSet::default();
-        if let Some(items) = self.get_items() {
-            buffer = items.keys().cloned().collect();
+        // sync key to index
+        if let Some(key) = self.get_focused_sni_key() {
+            self.focused_sni_key = key.to_owned();
         }
-        for key in &buffer {
+
+        // create a buffer for items keys and their titles(for sorting)
+        let mut buffer = IndexMap::new();
+        if let Some(items) = self.get_items() {
+            buffer = items
+                .iter()
+                .map(|(k, v)| (k.to_owned(), v.0.get_title().to_owned()))
+                .collect();
+        }
+
+        // Add sni states if there are in new items
+        for (key, _) in &buffer {
             self.sni_states
-                .entry(key.to_string())
+                .entry(key.to_owned())
                 .or_insert_with(|| SniState::new());
         }
-        self.sni_states.retain(|key, _| buffer.contains(key));
-        if let Some(index) = self.get_focused_sni_index() {
-            if let Some((_, v)) = self.sni_states.get_index_mut(*index) {
-                v.set_focused(true);
-                return;
-            }
+
+        // Remove states that aren't in new items
+        self.sni_states.retain(|key, _| buffer.contains_key(key));
+
+        // Sort by titles
+        if self.config.sorting {
+            self.sni_states
+                .sort_by(|k1, _, k2, _| buffer[k1].cmp(&buffer[k2]));
         }
-        if let Some((_, v)) = self.sni_states.first_mut() {
-            v.set_focused(true);
-            self.focused_sni = Some(0);
+
+        // sync index to key back
+        if let Some(index) = self.sni_states.get_index_of(&self.focused_sni_key) {
+            self.focused_sni_index = index;
         }
-        // TODO sorting
+
+        // Synchronize focus
+        self.sync_focus();
     }
 
     /// Set running to false to quit the application.
@@ -97,28 +114,22 @@ impl App {
 
     pub fn get_focused_sni_key(&self) -> Option<&String> {
         self.sni_states
-            .get_index(*self.get_focused_sni_index()?)
+            .get_index(*self.get_focused_sni_index())
             .map(|(k, _)| k)
     }
 
-    pub fn get_focused_sni_index(&self) -> Option<&usize> {
-        self.focused_sni.as_ref()
+    pub fn get_focused_sni_index(&self) -> &usize {
+        &self.focused_sni_index
     }
 
     pub fn get_focused_sni_state(&self) -> Option<&SniState> {
-        if let Some(key) = self.focused_sni {
-            let (_, v) = self.sni_states.get_index(key)?;
-            return Some(v);
-        }
-        None
+        let (_, v) = self.sni_states.get_index(self.focused_sni_index)?;
+        return Some(v);
     }
 
     pub fn get_focused_sni_state_mut(&mut self) -> Option<&mut SniState> {
-        if let Some(key) = self.focused_sni {
-            let (_, v) = self.sni_states.get_index_mut(key)?;
-            return Some(v);
-        }
-        None
+        let (_, v) = self.sni_states.get_index_mut(self.focused_sni_index)?;
+        return Some(v);
     }
 
     pub fn get_focused_sni_key_by_position(&mut self, pos: Position) -> Option<String> {
@@ -143,8 +154,7 @@ impl App {
         if len <= 1 {
             return Some(());
         }
-        let index = self.get_focused_sni_index()?.clone();
-        self.sni_states.get_index_mut(index)?.1.focused = false;
+        let index = self.focused_sni_index;
         let columns = self.config.columns;
 
         let new_index = match direction {
@@ -171,11 +181,24 @@ impl App {
             }
             FocusDirection::Left => index.checked_sub(1).unwrap_or(len - 1),
         };
-        let (_, val) = self.sni_states.get_index_mut(new_index)?;
-        val.focused = true;
-        self.focused_sni = Some(new_index);
+
+        self.focused_sni_index = new_index;
+        self.focused_sni_key = self
+            .sni_states
+            .get_index(self.focused_sni_index)
+            .unwrap()
+            .0
+            .clone();
+        self.sni_states.get_index_mut(index)?.1.set_focused(false);
+        self.sync_focus();
 
         Some(())
+    }
+
+    pub fn sync_focus(&mut self) {
+        if let Some(val) = self.sni_states.get_mut(&self.focused_sni_key) {
+            val.set_focused(true);
+        }
     }
 
     pub async fn activate_menu_item(
@@ -200,7 +223,6 @@ impl App {
                     menu_path: path.to_string(),
                     submenu_id: item.id,
                 };
-                log::debug!("{:?}", activate_request);
                 let _ = self.client.activate(activate_request).await;
 
                 let _ = self

@@ -1,9 +1,11 @@
-# Whether to sort tray items by their titles
-# Not yet implemented
-sorting = false
+# whether to sort tray items by their titles
+sorting = true
 
 # max amount of columns in layout
 columns = 3
+
+# enable mouse support
+mouse = false
 
 [key_map]
 # move item focus

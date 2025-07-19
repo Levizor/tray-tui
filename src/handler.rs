@@ -80,28 +80,25 @@ fn handle_scroll(mouse_event: MouseEvent, app: &App) -> Option<()> {
 
 async fn handle_move(mouse_event: MouseEvent, app: &mut App) -> Option<()> {
     let pos = get_pos(mouse_event);
-    if let Some(index) = app.focused_sni {
-        if let Some((_, sni_state)) = app.sni_states.get_index_mut(index) {
-            if sni_state.rect.contains(pos) {
-                let mut tree_state = app.get_focused_tree_state_mut()?;
-                let rendered = tree_state.rendered_at(pos)?.to_owned();
-                tree_state.select(rendered.to_vec());
-                return None;
-            } else {
-                sni_state.set_focused(false);
-                app.focused_sni = None;
-            }
+    if let Some((_, sni_state)) = app.sni_states.get_index_mut(app.focused_sni_index) {
+        if sni_state.rect.contains(pos) {
+            let mut tree_state = app.get_focused_tree_state_mut()?;
+            let rendered = tree_state.rendered_at(pos)?.to_owned();
+            tree_state.select(rendered.to_vec());
+            return None;
+        } else {
+            sni_state.set_focused(false);
+            app.focused_sni_index = 0;
         }
     }
 
     if let Some(k) = &app.get_focused_sni_key_by_position(pos) {
         if let Some(state_tree) = app.sni_states.get_mut(k) {
             state_tree.set_focused(true);
-            app.focused_sni = app.sni_states.get_index_of(k);
+            app.focused_sni_index = app.sni_states.get_index_of(k).unwrap_or(0);
         }
-    } else {
-        app.focused_sni = None;
     }
+
     Some(())
 }
 
