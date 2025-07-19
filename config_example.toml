@@ -1,5 +1,5 @@
 # whether to sort tray items by their titles
-sorting = true
+sorting = false
 
 # max amount of columns in layout
 columns = 3
