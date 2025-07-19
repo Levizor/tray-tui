@@ -88,6 +88,9 @@ async fn main() -> AppResult<()> {
                     ).await;
                 }
                 app.update();
+                if let system_tray::client::Event::Remove(_) = update {
+                    app.sync_focus();
+                }
             }
 
             Ok(event) = tui.events.next() => {
