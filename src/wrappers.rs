@@ -7,6 +7,7 @@ use ratatui::{
     style::{Color, Style},
     widgets::Widget,
 };
+use system_tray::client::{Event, UpdateEvent};
 use system_tray::{
     item::StatusNotifierItem,
     menu::{MenuItem, TrayMenu},
@@ -203,5 +204,41 @@ impl FindMenuByUsize for TrayMenu {
         }
 
         Some(result)
+    }
+}
+
+pub struct LoggableEvent<'a>(pub &'a system_tray::client::Event);
+
+impl std::fmt::Display for LoggableEvent<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.0 {
+            Event::Update(dest, update_event) => {
+                write!(
+                    f,
+                    "{} Update Event for {}",
+                    update_event_variant(&update_event),
+                    dest
+                )
+            }
+            Event::Add(dest, sni) => write!(f, "Add Event for {}: {}", dest, sni.get_title()),
+            Event::Remove(dest) => write!(f, "Remove Event for {}", dest),
+        }
+    }
+}
+
+fn update_event_variant(event: &UpdateEvent) -> &'static str {
+    match event {
+        UpdateEvent::AttentionIcon(_) => "AttentionIcon",
+        UpdateEvent::Icon {
+            icon_name: _,
+            icon_pixmap: _,
+        } => "Icon",
+        UpdateEvent::OverlayIcon(_) => "OverlayIcon",
+        UpdateEvent::Status(_) => "Status",
+        UpdateEvent::Title(_) => "Title",
+        UpdateEvent::Tooltip(_) => "Tooltip",
+        UpdateEvent::Menu(_) => "Menu",
+        UpdateEvent::MenuDiff(_) => "MenuDiff",
+        UpdateEvent::MenuConnect(_) => "MenuConnect",
     }
 }

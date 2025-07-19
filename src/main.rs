@@ -7,6 +7,7 @@ use crate::{
     event::{Event, EventHandler},
     handler::{handle_key_events, handle_mouse_event},
     tui::Tui,
+    wrappers::LoggableEvent,
 };
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
@@ -77,12 +78,11 @@ async fn main() -> AppResult<()> {
         tui.draw(&mut app)?;
         tokio::select! {
             Ok(update) = tray_rx.recv() => {
-                log::info!("UPDATE: {:?}", update);
-                if let system_tray::client::Event::Update(dest, system_tray::client::UpdateEvent::Menu(_)) = update {
-                    // the TrayMenu exist means that the menu path must exist, i think.
-                    let menu_path = app.items.lock().unwrap().get(&dest).unwrap().0.menu.clone().unwrap();
+                log::info!("{}", LoggableEvent(&update));
+                if let system_tray::client::Event::Update(dest, system_tray::client::UpdateEvent::Menu(_)) = &update {
+                    let menu_path = app.items.lock().unwrap().get(dest).unwrap().0.menu.clone().unwrap();
                     let _ = app.client.about_to_show_menuitem(
-                        dest,
+                        dest.to_owned(),
                         menu_path,
                         0,
                     ).await;
