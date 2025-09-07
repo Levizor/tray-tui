@@ -1,143 +1,75 @@
 {
-  description = "Rust shells";
+  description = "tray-tui: system tray in your terminal";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
-    inputs@{ flake-parts, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [
-        "x86_64-linux"
-        "x86_64-darwin"
-        "aarch64-linux"
-        "aarch64-darwin"
-      ];
+    inputs@{
+      self,
+      nixpkgs,
+      flake-utils,
+      ...
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+        manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
+      in
+      rec {
 
-      perSystem =
-        {
-          config,
-          pkgs,
-          system,
-          ...
-        }:
-        let
-          pkgs = import inputs.nixpkgs {
-            inherit system;
-            overlays = [ (import inputs.rust-overlay) ];
-          };
+        packages.tray-tui =
+          with pkgs;
+          rustPlatform.buildRustPackage rec {
+            pname = manifest.name;
+            inherit (manifest) version;
 
-          makeRustInfo =
-            {
-              version,
-              profile,
-            }:
-            let
-              rust = pkgs.rust-bin.${version}.latest.${profile}.override { extensions = [ "rust-src" ]; };
-            in
-            {
-              name = "rust-" + version + "-" + profile;
-
-              # From https://discourse.nixos.org/t/rust-src-not-found-and-other-misadventures-of-developing-rust-on-nixos/11570/11
-              path = "${rust}/lib/rustlib/src/rust/library";
-
-              drvs = [
-                pkgs.just
-                pkgs.openssl
-                pkgs.pkg-config
-                pkgs.rust-analyzer
-                rust
-                pkgs.hyprland-workspaces
-              ];
+            src = ./.;
+            cargoLock = {
+              lockFile = ./Cargo.lock;
             };
 
-          makeRustEnv =
-            {
-              version,
-              profile,
-            }:
-            let
-              rustInfo = makeRustInfo {
-                inherit version profile;
-              };
-            in
-            pkgs.buildEnv {
-              name = rustInfo.name;
-              paths = rustInfo.drvs;
-            };
+            nativeBuildInputs = [
+              installShellFiles
+            ];
 
-          matrix = {
-            stable-default = {
-              version = "stable";
-              profile = "default";
-            };
+            postInstall = ''
+              installShellCompletion --cmd tray-tui \
+                --bash <($out/bin/tray-tui --completions bash) \
+                --zsh <($out/bin/tray-tui --completions zsh) \
+                --fish <($out/bin/tray-tui --completions fish)
+            '';
 
-            stable-minimal = {
-              version = "stable";
-              profile = "minimal";
-            };
+            passthru.updateScript = nix-update-script { };
 
-            beta-default = {
-              version = "beta";
-              profile = "default";
-            };
-
-            beta-minimal = {
-              version = "beta";
-              profile = "minimal";
-            };
-
-            nightly-default = {
-              version = "nightly";
-              profile = "default";
-            };
-
-            nightly-minimal = {
-              version = "nightly";
-              profile = "minimal";
+            meta = {
+              description = "System tray in your terminal";
+              homepage = "https://github.com/Levizor/tray-tui";
+              license = lib.licenses.mit;
+              mainProgram = "tray-tui";
+              maintainers = with lib.maintainers; [ Levizor ];
+              platforms = lib.platforms.linux;
             };
           };
-        in
-        {
-          formatter = pkgs.alejandra;
 
-          devShells =
-            builtins.mapAttrs (
-              name: value:
-              let
-                version = value.version;
-                profile = value.profile;
-                rustInfo = makeRustInfo {
-                  inherit version profile;
-                };
-              in
-              pkgs.mkShell {
-                name = rustInfo.name;
+        defaultPackage = packages.tray-tui;
 
-                RUST_SRC_PATH = rustInfo.path;
-
-                buildInputs = rustInfo.drvs;
-              }
-            ) matrix
-            // {
-              default =
-                let
-                  version = matrix.beta-default.version;
-                  profile = matrix.beta-default.profile;
-                  rustInfo = makeRustInfo {
-                    inherit version profile;
-                  };
-                in
-                pkgs.mkShell {
-                  name = rustInfo.name;
-
-                  RUST_SRC_PATH = rustInfo.path;
-
-                  buildInputs = rustInfo.drvs;
-                };
-            };
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            pkgconf
+            rust-analyzer
+            rustc
+            cargo
+            cargo-edit
+            git
+          ];
+          RUST_BACKTRACE = "1";
+          CARGO_INCREMENTAL = "1";
         };
-    };
+      }
+    );
+
 }
