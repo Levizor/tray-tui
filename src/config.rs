@@ -243,6 +243,7 @@ fn key_map() -> HashMap<KeyCombination, KeyBindEvent> {
     map.insert(key!(ctrl - c), KeyBindEvent::Quit);
     map.insert(key!(q), KeyBindEvent::Quit);
     map.insert(key!(enter), KeyBindEvent::Activate);
+    map.insert(key!(space), KeyBindEvent::Activate);
 
     map
 }
