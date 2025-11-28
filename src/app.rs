@@ -24,6 +24,22 @@ pub type BoxStack = Vec<(i32, Rect)>;
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
+#[derive(Debug)]
+pub struct Layout {
+    pub rows: Vec<Vec<usize>>,
+    pub last_col: usize
+
+}
+
+impl Layout {
+    pub fn new() -> Self {
+        Self {
+            rows: Vec::default(),
+            last_col: 0,
+        }
+    }
+}
+
 /// Application.
 #[derive(Debug)]
 pub struct App {
@@ -40,6 +56,7 @@ pub struct App {
     /// items map from system-tray
     pub items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
     pub tray_rx: Mutex<Receiver<Event>>,
+    pub layout: Layout,
 }
 
 impl App {
@@ -54,6 +71,7 @@ impl App {
             client,
             focused_sni_index: 0,
             focused_sni_key: String::default(),
+            layout: Layout::new()
         }
     }
 
@@ -94,6 +112,11 @@ impl App {
             self.focused_sni_index = index;
         }
 
+        self.layout.rows = (0..self.sni_states.len())
+            .collect::<Vec<_>>()
+            .chunks(self.config.columns)
+            .map(|chunk| chunk.to_vec())
+            .collect();
         // Synchronize focus
         self.sync_focus();
     }
@@ -150,45 +173,65 @@ impl App {
     }
 
     pub fn move_focus(&mut self, direction: FocusDirection) -> Option<()> {
-        let len = self.sni_states.len();
-        if len <= 1 {
+        let total = self.layout.rows.iter().map(|r| r.len()).sum::<usize>();
+        if total <= 1 {
             return Some(());
         }
+
         let index = self.focused_sni_index;
-        let columns = self.config.columns;
+        let cols = self.config.columns;
+
+        let last_row_index = self.layout.rows.len() - 1;
+        let last_row_len = self.layout.rows[last_row_index].len();
+
+        let row = index / cols;
+        let col = index % cols;
 
         let new_index = match direction {
-            FocusDirection::Down => {
-                if index + columns < len {
-                    index + columns
+            FocusDirection::Left => {
+                if index > 0 {
+                    index - 1
                 } else {
-                    index % columns
+                    total - 1
                 }
             }
-            FocusDirection::Up => index.checked_sub(columns).unwrap_or_else(|| {
-                let mut i = index;
-                while i + columns < len {
-                    i += columns;
-                }
-                i
-            }),
+
             FocusDirection::Right => {
-                if index + 1 < len {
+                if index + 1 < total {
                     index + 1
                 } else {
                     0
                 }
             }
-            FocusDirection::Left => index.checked_sub(1).unwrap_or(len - 1),
+
+            FocusDirection::Up => {
+                let target_row = if row == 0 { last_row_index } else { row - 1 };
+                let target_len = if target_row == last_row_index { last_row_len } else { cols };
+                let clamped_col = self.layout.last_col.min(target_len - 1);
+                target_row * cols + clamped_col
+            }
+
+            FocusDirection::Down => {
+                let target_row = if row == last_row_index { 0 } else { row + 1 };
+                let target_len = if target_row == last_row_index { last_row_len } else { cols };
+                let clamped_col = self.layout.last_col.min(target_len - 1);
+                target_row * cols + clamped_col
+            }
         };
+
+        match direction {
+            FocusDirection::Up | FocusDirection::Down => self.layout.last_col = col,
+            _ => {}
+        }
 
         self.focused_sni_index = new_index;
         self.focused_sni_key = self
             .sni_states
-            .get_index(self.focused_sni_index)
+            .get_index(new_index)
             .unwrap()
             .0
             .clone();
+
         self.sni_states.get_index_mut(index)?.1.set_focused(false);
         self.sync_focus();
 
