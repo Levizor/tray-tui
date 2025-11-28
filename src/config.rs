@@ -1,5 +1,7 @@
 use crate::CMD;
 use crokey::{key, KeyCombination};
+use crossterm::event::{KeyCode, KeyModifiers};
+use std::str::FromStr;
 use ratatui::style::Color;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
@@ -48,11 +50,21 @@ where
     D: Deserializer<'de>,
 {
     let mut default_map = key_map();
-    let config_map: Option<HashMap<KeyCombination, KeyBindEvent>> =
+    let config_map: Option<HashMap<String, KeyBindEvent>> =
         Option::deserialize(deserializer)?;
+
     if let Some(map) = config_map {
-        default_map.extend(map);
+        for (k, v) in map {
+            let kc = if k.len() == 1 && k.chars().next().unwrap().is_uppercase() {
+                let ch = k.chars().next().unwrap();
+                KeyCombination::new(KeyCode::Char(ch), KeyModifiers::SHIFT)
+            } else {
+                KeyCombination::from_str(&k).map_err(serde::de::Error::custom)?
+            };
+            default_map.insert(kc, v);
+        }
     }
+    log::debug!("LOADED KEYMAP: {:?}", default_map);
 
     Ok(default_map)
 }
@@ -148,6 +160,7 @@ impl Config {
         let config = builder.build()?.try_deserialize::<Config>()?;
         Ok(config)
     }
+
     fn get_default_config_path() -> Result<PathBuf, Box<dyn Error>> {
         match dirs::config_dir() {
             Some(conf_dir) => Ok(conf_dir.join(format!("{CMD}/config.toml"))),
