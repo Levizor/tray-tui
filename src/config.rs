@@ -1,11 +1,11 @@
 use crate::CMD;
 use crokey::{key, KeyCombination};
 use crossterm::event::{KeyCode, KeyModifiers};
+use std::error::Error;
 use std::str::FromStr;
 use ratatui::style::Color;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
-use std::error::Error;
 use std::path::PathBuf;
 
 #[derive(Debug, Deserialize, Clone, Copy)]
@@ -49,11 +49,13 @@ fn merge_with_default<'de, D>(
 where
     D: Deserializer<'de>,
 {
-    let mut default_map = key_map();
-    let config_map: Option<HashMap<String, KeyBindEvent>> =
-        Option::deserialize(deserializer)?;
+    let mut result = key_map();
+    let mut config_map = HashMap::<KeyCombination, KeyBindEvent>::new();
+    let raw_conf_map: Option<HashMap<String, KeyBindEvent>> = Option::deserialize(deserializer)?;
 
-    if let Some(map) = config_map {
+    // Check for duplicates
+
+    if let Some(map) = raw_conf_map {
         for (k, v) in map {
             let kc = if k.len() == 1 && k.chars().next().unwrap().is_uppercase() {
                 let ch = k.chars().next().unwrap();
@@ -61,12 +63,19 @@ where
             } else {
                 KeyCombination::from_str(&k).map_err(serde::de::Error::custom)?
             };
-            default_map.insert(kc, v);
+            if config_map.contains_key(&kc) {
+                return Err(serde::de::Error::custom(format!("config: duplicate key binding detected for key: '{}'", k)))
+            }
+
+            config_map.insert(kc, v);
         }
     }
-    log::debug!("LOADED KEYMAP: {:?}", default_map);
 
-    Ok(default_map)
+    result.extend(config_map);
+
+    log::debug!("LOADED KEYMAP: {:?}", result);
+
+    Ok(result)
 }
 
 #[derive(Deserialize, Debug)]
