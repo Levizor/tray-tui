@@ -221,8 +221,9 @@ impl App {
 
         match direction {
             FocusDirection::Up | FocusDirection::Down => self.layout.last_col = col,
-            _ => {}
+            _ => self.layout.last_col = new_index % cols
         }
+
 
         self.focused_sni_index = new_index;
         self.focused_sni_key = self
