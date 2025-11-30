@@ -4,7 +4,7 @@ description = "System tray in your terminal"
 repository = "https://github.com/Levizor/tray-tui"
 homepage = "https://github.com/Levizor/tray-tui"
 
-version = "0.3.1"
+version = "0.3.2"
 authors = [
   "Levizor <levizor@disroot.org>",
   "EliasDevis <elias.devis@protonmail.com>",
