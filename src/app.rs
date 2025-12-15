@@ -250,7 +250,9 @@ impl App {
         ids: &[Id],
         tree_state: &mut TreeState<Id>,
     ) -> Option<()> {
+        log::debug!("Entered activate_menu_item");
         let sni_key = self.get_focused_sni_key()?;
+        log::debug!("Activating menu item with key: {}", &sni_key);
         let map = self.get_items()?;
         let (sni, menu) = map.get(sni_key)?;
         let menu = match menu {
@@ -267,7 +269,8 @@ impl App {
                     menu_path: path.to_string(),
                     submenu_id: item.id,
                 };
-                let _ = self.client.activate(activate_request).await;
+                let res = self.client.activate(activate_request).await;
+                log::debug!("Result of activating an item: {:?}", res);
 
                 let _ = self
                     .client
