@@ -78,15 +78,7 @@ async fn main() -> AppResult<()> {
         tui.draw(&mut app)?;
         tokio::select! {
             Ok(update) = tray_rx.recv() => {
-                log::info!("{}", LoggableEvent(&update));
-                if let system_tray::client::Event::Update(dest, system_tray::client::UpdateEvent::Menu(_)) = &update {
-                    let menu_path = app.items.lock().unwrap().get(dest).unwrap().0.menu.clone().unwrap();
-                    let _ = app.client.about_to_show_menuitem(
-                        dest.to_owned(),
-                        menu_path,
-                        0,
-                    ).await;
-                }
+                log::debug!("{}", LoggableEvent(&update));
                 app.update();
                 if let system_tray::client::Event::Remove(_) = update {
                     app.sync_focus();
@@ -94,6 +86,7 @@ async fn main() -> AppResult<()> {
             }
 
             Ok(event) = tui.events.next() => {
+                log::debug!("Key event: {:?}", &event);
                 match event {
                     Event::Key(key_event) => handle_key_events(key_event, &mut app).await?,
                     Event::Mouse(mouse_event) => {
