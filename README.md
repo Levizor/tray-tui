@@ -11,8 +11,8 @@ tray-tui brings system tray functionality to the terminal, displaying **tray men
 
 ## **Features**
 
-✅ **System tray integration** in a terminal  
-✅ **Interactive tree-based menu navigation**  
+✅ **System tray integration** in a terminal
+✅ **Interactive tree-based menu navigation**
 ✅ **Built using Rust and ratatui**
 
 ## **Installation**
@@ -30,10 +30,22 @@ paru tray-tui
 ```
 
 ### NixOS or Nix package manager
+Available in nixpkgs:
+```nix
+environment.systemPackages = with pkgs; [
+  tray-tui
+];
 ```
-  environment.systemPackages = with pkgs; [
-    tray-tui
-  ];
+As a flake:
+```nix
+inputs = {
+  tray-tui.url = "github:Levizor/tray-tui";
+};
+```
+```nix
+environment.systemPackages = with pkgs; [
+  inputs.tray-tui.packages.${system}.tray-tui
+];
 ```
 
 ### Other
