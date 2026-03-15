@@ -27,6 +27,12 @@ pub struct Config {
     #[serde(default = "columns")]
     pub columns: usize,
 
+    #[serde(default = "scrollbar")]
+    pub scrollbar: bool,
+
+    #[serde(default = "min_height")]
+    pub min_height: u16,
+
     #[serde(default = "sorting")]
     pub sorting: bool,
 
@@ -144,6 +150,8 @@ impl Default for Config {
             symbols: symbols(),
             colors: colors(),
             columns: columns(),
+            scrollbar: scrollbar(),
+            min_height: min_height(),
             mouse: mouse(),
             key_map: key_map(),
         }
@@ -242,6 +250,14 @@ fn node_no_children_symbol() -> String {
 
 const fn columns() -> usize {
     3
+}
+
+const fn min_height() -> u16 {
+    4
+}
+
+const fn scrollbar() -> bool {
+    true
 }
 
 const fn mouse() -> bool {
