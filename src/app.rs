@@ -110,6 +110,15 @@ impl App {
         // sync index to key back
         if let Some(index) = self.sni_states.get_index_of(&self.focused_sni_key) {
             self.focused_sni_index = index;
+        } else if !self.sni_states.is_empty() {
+            // Key is gone! Reset to a valid neighbor (next or previous)
+            self.focused_sni_index = self.focused_sni_index.min(self.sni_states.len().saturating_sub(1));
+            if let Some((k, _)) = self.sni_states.get_index(self.focused_sni_index) {
+                self.focused_sni_key = k.clone();
+            }
+        } else {
+            self.focused_sni_index = 0;
+            self.focused_sni_key = String::default();
         }
 
         self.layout.rows = (0..self.sni_states.len())
@@ -225,16 +234,16 @@ impl App {
         }
 
 
-        self.focused_sni_index = new_index;
-        self.focused_sni_key = self
-            .sni_states
-            .get_index(new_index)
-            .unwrap()
-            .0
-            .clone();
+        if let Some((key, _)) = self.sni_states.get_index(new_index) {
+            let key = key.clone();
+            self.focused_sni_index = new_index;
+            self.focused_sni_key = key;
 
-        self.sni_states.get_index_mut(index)?.1.set_focused(false);
-        self.sync_focus();
+            if let Some((_, old_state)) = self.sni_states.get_index_mut(index) {
+                old_state.set_focused(false);
+            }
+            self.sync_focus();
+        }
 
         Some(())
     }
