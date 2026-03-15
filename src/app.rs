@@ -141,7 +141,7 @@ impl App {
 
     pub fn get_items(
         &self,
-    ) -> Option<MutexGuard<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>> {
+    ) -> Option<MutexGuard<'_, HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>> {
         match self.items.lock() {
             Ok(items) => Some(items),
             Err(_) => None,
@@ -175,12 +175,12 @@ impl App {
             .map(|(k, _)| k.to_string())
     }
 
-    pub fn get_focused_tree_state(&self) -> Option<Ref<TreeState<Id>>> {
+    pub fn get_focused_tree_state(&self) -> Option<Ref<'_, TreeState<Id>>> {
         self.get_focused_sni_state()
             .map(|sni| sni.tree_state.borrow())
     }
 
-    pub fn get_focused_tree_state_mut(&self) -> Option<RefMut<TreeState<Id>>> {
+    pub fn get_focused_tree_state_mut(&self) -> Option<RefMut<'_, TreeState<Id>>> {
         self.get_focused_sni_state()
             .map(|sni| sni.tree_state.borrow_mut())
     }

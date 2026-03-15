@@ -161,7 +161,7 @@ impl Widget for Item<'_> {
     }
 }
 
-fn menuitem_to_treeitem(id: usize, menu_item: &MenuItem) -> Option<TreeItem<Id>> {
+fn menuitem_to_treeitem(id: usize, menu_item: &MenuItem) -> Option<TreeItem<'_, Id>> {
     if menu_item.submenu.is_empty() {
         match &menu_item.label {
             Some(label) => return Some(TreeItem::new_leaf(id, label.clone())),
@@ -178,7 +178,7 @@ fn menuitem_to_treeitem(id: usize, menu_item: &MenuItem) -> Option<TreeItem<Id>>
     root.ok()
 }
 
-fn menuitems_to_treeitems(menu_items: &Vec<MenuItem>) -> Vec<TreeItem<Id>> {
+fn menuitems_to_treeitems(menu_items: &Vec<MenuItem>) -> Vec<TreeItem<'_, Id>> {
     menu_items
         .iter()
         .enumerate()
