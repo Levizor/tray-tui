@@ -27,8 +27,8 @@ pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 #[derive(Debug)]
 pub struct Layout {
     pub rows: Vec<Vec<usize>>,
-    pub last_col: usize
-
+    pub last_col: usize,
+    pub scroll_offset: u16,
 }
 
 impl Layout {
@@ -36,6 +36,7 @@ impl Layout {
         Self {
             rows: Vec::default(),
             last_col: 0,
+            scroll_offset: 0,
         }
     }
 }
@@ -52,6 +53,8 @@ pub struct App {
     pub sni_states: IndexMap<String, SniState>, // for the StatusNotifierItem
     //  currently focused sni item info
     pub focused_sni_index: usize,
+    /// last focused index to detect focus changes for auto-scrolling
+    pub last_focused_sni_index: usize,
     pub focused_sni_key: String,
     /// items map from system-tray
     pub items: Arc<Mutex<HashMap<String, (StatusNotifierItem, Option<TrayMenu>)>>>,
@@ -70,8 +73,9 @@ impl App {
             sni_states: IndexMap::default(),
             client,
             focused_sni_index: 0,
+            last_focused_sni_index: 0,
             focused_sni_key: String::default(),
-            layout: Layout::new()
+            layout: Layout::new(),
         }
     }
 

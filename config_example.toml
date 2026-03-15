@@ -4,6 +4,12 @@ sorting = false
 # max amount of columns in layout
 columns = 3
 
+# minimum height of tray items
+min_height = 4
+
+# whether to show scrollbar
+scrollbar = true
+
 # enable mouse support
 mouse = false
 

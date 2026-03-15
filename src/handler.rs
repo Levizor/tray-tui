@@ -64,18 +64,37 @@ async fn handle_click(mouse_event: MouseEvent, app: &App) -> Option<()> {
     None
 }
 
-fn handle_scroll(mouse_event: MouseEvent, app: &App) -> Option<()> {
-    let mut tree_state = app.get_focused_tree_state_mut()?;
+fn handle_scroll(mouse_event: MouseEvent, app: &mut App) -> Option<()> {
+    let pos = get_pos(mouse_event);
+
+    // If mouse is over focused item, scroll its menu
+    if let Some(sni_state) = app.get_focused_sni_state() {
+        if sni_state.rect.contains(pos) {
+            let mut tree_state = app.get_focused_tree_state_mut()?;
+            match mouse_event.kind {
+                MouseEventKind::ScrollUp => {
+                    tree_state.scroll_up(1);
+                }
+                MouseEventKind::ScrollDown => {
+                    tree_state.scroll_down(1);
+                }
+                _ => {}
+            }
+            return Some(());
+        }
+    }
+
+    // Otherwise scroll the tray layout
     match mouse_event.kind {
         MouseEventKind::ScrollUp => {
-            tree_state.scroll_up(1);
+            app.layout.scroll_offset = app.layout.scroll_offset.saturating_sub(1);
         }
         MouseEventKind::ScrollDown => {
-            tree_state.scroll_down(1);
+            app.layout.scroll_offset = app.layout.scroll_offset.saturating_add(1);
         }
         _ => {}
     }
-    None
+    Some(())
 }
 
 async fn handle_move(mouse_event: MouseEvent, app: &mut App) -> Option<()> {
@@ -88,7 +107,6 @@ async fn handle_move(mouse_event: MouseEvent, app: &mut App) -> Option<()> {
             return None;
         } else {
             sni_state.set_focused(false);
-            app.focused_sni_index = 0;
         }
     }
 
